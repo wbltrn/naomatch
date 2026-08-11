@@ -27,6 +27,7 @@ const [editingExperienceId, setEditingExperienceId] = useState<number | null>(
 const [bullets, setBullets] = useState<string[]>([""]);
 const [loading, setLoading] = useState(true);
 const [error, setError] = useState("");
+const [formMessage, setFormMessage] = useState("");
 
 useEffect(() => {
  async function loadExperiences() {
@@ -100,10 +101,12 @@ useEffect(() => {
       description: "",
     });
     setEditingExperienceId(null);
+    setFormMessage("Experience saved successfully.");
     setBullets([""]);
-  } catch (error) {
-    console.error(error);
-  }
+ } catch (error) {
+  console.error(error);
+  setFormMessage("Unable to save experience.");
+ }
 }
 
 async function handleDeleteExperience(experienceId: number) {
@@ -300,6 +303,13 @@ function handleCancelEdit() {
           </button>
         )}
       </div>
+
+      {formMessage && (
+        <p className="text-sm">
+          {formMessage}
+        </p>
+      )}
+
     </form>
 
     <div className="mt-8">
