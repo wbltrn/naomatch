@@ -25,11 +25,16 @@ const [editingExperienceId, setEditingExperienceId] = useState<number | null>(
   null
 );
 const [bullets, setBullets] = useState<string[]>([""]);
+const [loading, setLoading] = useState(true);
 
 useEffect(() => {
   async function loadExperiences() {
-    const data = await getExperiences();
-    setExperiences(data);
+    try {
+      const data = await getExperiences();
+      setExperiences(data);
+    } finally {
+      setLoading(false);
+    }
   }
 
   loadExperiences();
@@ -296,41 +301,45 @@ function handleCancelEdit() {
     <div className="mt-8">
       <h2 className="text-2xl font-semibold">Experiences</h2>
 
-      {experiences.map((experience: any) => (
-        <div
-          key={experience.id}
-          className="mt-4 rounded border p-4"
-        >
-          <h3 className="text-xl font-bold">
-            {experience.title}
-          </h3>
-
-          <p>{experience.organization}</p>
-          <p>{experience.description}</p>
-
-          {experience.bullets?.length > 0 && (
-            <ul className="mt-2 list-disc pl-5">
-              {experience.bullets.map((bullet: any) => (
-                <li key={bullet.id}>{bullet.bullet_text}</li>
-              ))}
-            </ul>
-          )}
-
-          <button
-            onClick={() => handleEditExperience(experience)}
-            className="mt-3 mr-2 rounded border px-3 py-1"
+      {loading ? (
+        <p className="mt-4">Loading experiences...</p>
+      ) : (
+        experiences.map((experience: any) => (
+          <div
+            key={experience.id}
+            className="mt-4 rounded border p-4"
           >
-            Edit
-          </button>
+            <h3 className="text-xl font-bold">
+              {experience.title}
+            </h3>
 
-          <button
-            onClick={() => handleDeleteExperience(experience.id)}
-            className="mt-3 rounded border px-3 py-1"
-          >
-            Delete
-          </button>
-        </div>
-      ))}
+            <p>{experience.organization}</p>
+            <p>{experience.description}</p>
+
+            {experience.bullets?.length > 0 && (
+              <ul className="mt-2 list-disc pl-5">
+                {experience.bullets.map((bullet: any) => (
+                  <li key={bullet.id}>{bullet.bullet_text}</li>
+                ))}
+              </ul>
+            )}
+
+            <button
+              onClick={() => handleEditExperience(experience)}
+              className="mt-3 mr-2 rounded border px-3 py-1"
+            >
+              Edit
+            </button>
+
+            <button
+              onClick={() => handleDeleteExperience(experience.id)}
+              className="mt-3 rounded border px-3 py-1"
+            >
+              Delete
+            </button>
+          </div>
+        ))
+      )}
     </div>
   </main>
 );
