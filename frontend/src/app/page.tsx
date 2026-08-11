@@ -130,6 +130,22 @@ function handleEditExperience(experience: any) {
 );
 }
 
+function handleCancelEdit() {
+  setEditingExperienceId(null);
+
+  setFormData({
+    type: "",
+    organization: "",
+    title: "",
+    location: "",
+    start_date: "",
+    end_date: "",
+    description: "",
+  });
+
+  setBullets([""]);
+}
+
  return (
   <main className="p-8">
     <h1 className="text-3xl font-bold">Naomatch</h1>
@@ -257,12 +273,24 @@ function handleEditExperience(experience: any) {
         Add Bullet
       </button>
 
-      <button
-        type="submit"
-        className="rounded bg-black px-4 py-2 text-white"
-      >
-        {editingExperienceId === null ? "Add Experience" : "Save Changes"}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          className="rounded bg-black px-4 py-2 text-white"
+        >
+          {editingExperienceId === null ? "Add Experience" : "Save Changes"}
+        </button>
+
+        {editingExperienceId !== null && (
+          <button
+            type="button"
+            onClick={handleCancelEdit}
+            className="rounded border px-4 py-2"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
 
     <div className="mt-8">
