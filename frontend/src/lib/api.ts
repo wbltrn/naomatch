@@ -59,3 +59,34 @@ export async function deleteExperience(experienceId: number) {
 
   return response.json();
 }
+
+export async function updateExperience(
+  experienceId: number,
+  experience: {
+    type: string;
+    organization?: string;
+    title: string;
+    location?: string;
+    start_date?: string;
+    end_date?: string;
+    description?: string;
+    bullets: { bullet_text: string }[];
+  }
+) {
+  const response = await fetch(
+    `http://127.0.0.1:8000/experiences/${experienceId}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(experience),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to update experience");
+  }
+
+  return response.json();
+}

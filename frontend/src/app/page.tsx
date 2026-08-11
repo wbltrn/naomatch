@@ -6,6 +6,7 @@ import {
   createExperience,
   deleteExperience,
   getExperiences,
+  updateExperience,
 } from "@/lib/api";
 
 export default function Home() {
@@ -20,6 +21,9 @@ export default function Home() {
   end_date: "",
   description: "",
 });
+const [editingExperienceId, setEditingExperienceId] = useState<number | null>(
+  null
+);
 
 useEffect(() => {
   async function loadExperiences() {
@@ -47,15 +51,26 @@ useEffect(() => {
 }
 
   try {
-    const newExperience = await createExperience({
-      ...formData,
-      bullets: [],
-    });
+    const savedExperience =
+      editingExperienceId === null
+      ? await createExperience({
+        ...formData,
+        bullets: [],
+      })
+    : await updateExperience(editingExperienceId, {
+        ...formData,
+        bullets: [],
+      });
 
-    setExperiences((currentExperiences: any[]) => [
-      ...currentExperiences,
-      newExperience,
-    ]);
+    setExperiences((currentExperiences: any[]) =>
+  editingExperienceId === null
+    ? [...currentExperiences, savedExperience]
+    : currentExperiences.map((experience) =>
+        experience.id === editingExperienceId
+          ? savedExperience
+          : experience
+      )
+);
 
     setFormData({
       type: "",
@@ -66,6 +81,7 @@ useEffect(() => {
       end_date: "",
       description: "",
     });
+    setEditingExperienceId(null);
   } catch (error) {
     console.error(error);
   }
@@ -83,6 +99,20 @@ async function handleDeleteExperience(experienceId: number) {
   } catch (error) {
     console.error(error);
   }
+}
+
+function handleEditExperience(experience: any) {
+  setEditingExperienceId(experience.id);
+
+  setFormData({
+    type: experience.type ?? "",
+    organization: experience.organization ?? "",
+    title: experience.title ?? "",
+    location: experience.location ?? "",
+    start_date: experience.start_date ?? "",
+    end_date: experience.end_date ?? "",
+    description: experience.description ?? "",
+  });
 }
 
  return (
@@ -174,7 +204,7 @@ async function handleDeleteExperience(experienceId: number) {
         type="submit"
         className="rounded bg-black px-4 py-2 text-white"
       >
-        Add Experience
+        {editingExperienceId === null ? "Add Experience" : "Save Changes"}
       </button>
     </form>
 
@@ -192,6 +222,13 @@ async function handleDeleteExperience(experienceId: number) {
 
           <p>{experience.organization}</p>
           <p>{experience.description}</p>
+
+          <button
+            onClick={() => handleEditExperience(experience)}
+            className="mt-3 mr-2 rounded border px-3 py-1"
+          >
+            Edit
+          </button>
 
           <button
             onClick={() => handleDeleteExperience(experience.id)}
