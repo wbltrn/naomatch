@@ -6,6 +6,7 @@ import {
   createExperience,
   deleteExperience,
   getExperiences,
+  getJobs,
   updateExperience,
 } from "@/lib/api";
 
@@ -30,6 +31,7 @@ const [error, setError] = useState("");
 const [formMessage, setFormMessage] = useState("");
 const [deleteMessage, setDeleteMessage] = useState("");
 const [isCurrent, setIsCurrent] = useState(false);
+const [jobs, setJobs] = useState<any[]>([]);
 
 useEffect(() => {
  async function loadExperiences() {
@@ -44,8 +46,18 @@ useEffect(() => {
   }
 }
 
+async function loadJobs() {
+  try {
+    const data = await getJobs();
+    setJobs(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
   loadExperiences();
-}, []);
+  loadJobs();
+  }, []);
 
   async function handleCheckBackend() {
     try {
@@ -442,6 +454,35 @@ function formatExperienceDate(date: string | null) {
           </div>
         ))
       )}
+
+      <div className="mt-8">
+        <h2 className="text-2xl font-semibold">Jobs</h2>
+
+        {jobs.length === 0 ? (
+          <p className="mt-4">No job postings added yet.</p>
+        ) : (
+          jobs.map((job: any) => (
+            <div
+              key={job.id}
+              className="mt-4 rounded border p-4"
+            >
+              <h3 className="text-xl font-bold">
+                {job.title}
+              </h3>
+
+              <p>{job.company}</p>
+
+              {job.location && (
+                <p>{job.location}</p>
+              )}
+
+              <p className="mt-2">
+                {job.description}
+              </p>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   </main>
 );
