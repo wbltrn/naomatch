@@ -5,6 +5,8 @@ from app.database import engine
 
 from app.routers.experiences import router as experiences_router
 
+from app.routers.jobs import router as jobs_router
+
 app = FastAPI()
 
 origins = [
@@ -20,6 +22,7 @@ app.add_middleware(
 )
 
 app.include_router(experiences_router)
+app.include_router(jobs_router)
 
 @app.get("/")
 def root():
