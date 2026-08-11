@@ -26,16 +26,20 @@ const [editingExperienceId, setEditingExperienceId] = useState<number | null>(
 );
 const [bullets, setBullets] = useState<string[]>([""]);
 const [loading, setLoading] = useState(true);
+const [error, setError] = useState("");
 
 useEffect(() => {
-  async function loadExperiences() {
-    try {
-      const data = await getExperiences();
-      setExperiences(data);
-    } finally {
-      setLoading(false);
-    }
+ async function loadExperiences() {
+  try {
+    const data = await getExperiences();
+    setExperiences(data);
+    setError("");
+  } catch {
+    setError("Unable to load experiences.");
+  } finally {
+    setLoading(false);
   }
+}
 
   loadExperiences();
 }, []);
@@ -303,6 +307,8 @@ function handleCancelEdit() {
 
       {loading ? (
         <p className="mt-4">Loading experiences...</p>
+      ) : error ? (
+        <p className="mt-4">{error}</p>
       ) : (
         experiences.map((experience: any) => (
           <div
