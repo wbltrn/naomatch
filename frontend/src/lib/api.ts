@@ -100,3 +100,25 @@ export async function getJobs() {
 
   return response.json();
 }
+
+export async function createJob(job: {
+  company: string;
+  title: string;
+  location?: string;
+  job_url?: string;
+  description: string;
+}) {
+  const response = await fetch("http://127.0.0.1:8000/jobs/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(job),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to create job");
+  }
+
+  return response.json();
+}

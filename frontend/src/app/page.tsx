@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   checkBackend,
   createExperience,
+  createJob,
   deleteExperience,
   getExperiences,
   getJobs,
@@ -22,9 +23,19 @@ export default function Home() {
   end_date: "",
   description: "",
 });
+
+const [jobFormData, setJobFormData] = useState({
+  company: "",
+  title: "",
+  location: "",
+  job_url: "",
+  description: "",
+});
+
 const [editingExperienceId, setEditingExperienceId] = useState<number | null>(
   null
 );
+
 const [bullets, setBullets] = useState<string[]>([""]);
 const [loading, setLoading] = useState(true);
 const [error, setError] = useState("");
@@ -219,6 +230,37 @@ function formatExperienceDate(date: string | null) {
     month: "short",
     year: "numeric",
   });
+}
+
+async function handleCreateJob(event: React.FormEvent) {
+  event.preventDefault();
+
+  if (
+    !jobFormData.company.trim() ||
+    !jobFormData.title.trim() ||
+    !jobFormData.description.trim()
+  ) {
+    return;
+  }
+
+  try {
+    const newJob = await createJob(jobFormData);
+
+    setJobs((currentJobs: any[]) => [
+      ...currentJobs,
+      newJob,
+    ]);
+
+    setJobFormData({
+      company: "",
+      title: "",
+      location: "",
+      job_url: "",
+      description: "",
+    });
+  } catch (error) {
+    console.error(error);
+  }
 }
 
  return (
@@ -454,6 +496,66 @@ function formatExperienceDate(date: string | null) {
           </div>
         ))
       )}
+
+      <form onSubmit={handleCreateJob} className="mt-8 space-y-3">
+        <h2 className="text-2xl font-semibold">Add Job Posting</h2>
+
+        <input
+          type="text"
+          placeholder="Company"
+          value={jobFormData.company}
+          onChange={(e) =>
+            setJobFormData({ ...jobFormData, company: e.target.value })
+          }
+          className="block w-full rounded border p-2"
+        />
+
+        <input
+          type="text"
+          placeholder="Job Title"
+          value={jobFormData.title}
+          onChange={(e) =>
+            setJobFormData({ ...jobFormData, title: e.target.value })
+          }
+          className="block w-full rounded border p-2"
+        />
+
+        <input
+          type="text"
+          placeholder="Location"
+          value={jobFormData.location}
+          onChange={(e) =>
+            setJobFormData({ ...jobFormData, location: e.target.value })
+          }
+          className="block w-full rounded border p-2"
+        />
+
+        <input
+          type="text"
+          placeholder="Job URL"
+          value={jobFormData.job_url}
+          onChange={(e) =>
+            setJobFormData({ ...jobFormData, job_url: e.target.value })
+          }
+          className="block w-full rounded border p-2"
+        />
+
+        <textarea
+          placeholder="Job Description"
+          value={jobFormData.description}
+          onChange={(e) =>
+            setJobFormData({ ...jobFormData, description: e.target.value })
+          }
+          className="block w-full rounded border p-2"
+        />
+
+        <button
+          type="submit"
+          className="rounded bg-black px-4 py-2 text-white"
+        >
+          Add Job
+        </button>
+      </form>
 
       <div className="mt-8">
         <h2 className="text-2xl font-semibold">Jobs</h2>
