@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from app.database import engine
 
+from app.routers.experiences import router as experiences_router
+
 app = FastAPI()
 
 origins = [
@@ -17,6 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(experiences_router)
 
 @app.get("/")
 def root():
