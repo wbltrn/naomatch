@@ -29,6 +29,7 @@ const [loading, setLoading] = useState(true);
 const [error, setError] = useState("");
 const [formMessage, setFormMessage] = useState("");
 const [deleteMessage, setDeleteMessage] = useState("");
+const [isCurrent, setIsCurrent] = useState(false);
 
 useEffect(() => {
  async function loadExperiences() {
@@ -80,7 +81,8 @@ useEffect(() => {
       editingExperienceId === null
       ? await createExperience({
         ...formData,
-       bullets: bullets
+        end_date: isCurrent ? null : formData.end_date || null,
+        bullets: bullets
         .filter((bullet) => bullet.trim() !== "")
         .map((bullet) => ({
           bullet_text: bullet.trim(),
@@ -88,6 +90,7 @@ useEffect(() => {
       })
     : await updateExperience(editingExperienceId, {
         ...formData,
+        end_date: isCurrent ? null : formData.end_date || null,
         bullets: bullets
         .filter((bullet) => bullet.trim() !== "")
         .map((bullet) => ({
@@ -115,6 +118,7 @@ useEffect(() => {
       description: "",
     });
     setEditingExperienceId(null);
+    setIsCurrent(false);
     setFormMessage("Experience saved successfully.");
     setBullets([""]);
  } catch (error) {
@@ -166,11 +170,13 @@ function handleEditExperience(experience: any) {
   experience.bullets?.length > 0
     ? experience.bullets.map((bullet: any) => bullet.bullet_text)
     : [""]
-);
+  );
+  setIsCurrent(!experience.end_date);
 }
 
 function handleCancelEdit() {
   setEditingExperienceId(null);
+  setIsCurrent(false);
 
   setFormData({
     type: "",
@@ -258,8 +264,25 @@ function handleCancelEdit() {
         onChange={(e) =>
           setFormData({ ...formData, end_date: e.target.value })
         }
+        disabled={isCurrent}
         className="block w-full rounded border p-2"
       />
+
+      <label className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={isCurrent}
+          onChange={(e) => {
+            const checked = e.target.checked;
+            setIsCurrent(checked);
+
+            if (checked) {
+              setFormData({ ...formData, end_date: "" });
+            }
+          }}
+        />
+        Currently working here
+      </label>
 
       <textarea
         placeholder="Description"
@@ -363,6 +386,13 @@ function handleCancelEdit() {
             </h3>
 
             <p>{experience.organization}</p>
+
+            <p>
+              {experience.start_date}
+              {" - "}
+              {experience.end_date ? experience.end_date : "Present"}
+            </p>
+
             <p>{experience.description}</p>
 
             {experience.bullets?.length > 0 && (

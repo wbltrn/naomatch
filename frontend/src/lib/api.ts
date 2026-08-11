@@ -26,7 +26,7 @@ export async function createExperience(experience: {
   title: string;
   location?: string;
   start_date?: string;
-  end_date?: string;
+  end_date?: string | null;
   description?: string;
   bullets: { bullet_text: string }[];
 }) {
@@ -68,7 +68,7 @@ export async function updateExperience(
     title: string;
     location?: string;
     start_date?: string;
-    end_date?: string;
+    end_date?: string | null;
     description?: string;
     bullets: { bullet_text: string }[];
   }
