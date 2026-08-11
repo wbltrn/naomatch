@@ -28,6 +28,7 @@ const [bullets, setBullets] = useState<string[]>([""]);
 const [loading, setLoading] = useState(true);
 const [error, setError] = useState("");
 const [formMessage, setFormMessage] = useState("");
+const [deleteMessage, setDeleteMessage] = useState("");
 
 useEffect(() => {
  async function loadExperiences() {
@@ -126,8 +127,10 @@ async function handleDeleteExperience(experienceId: number) {
         (experience) => experience.id !== experienceId
       )
     );
+    setDeleteMessage("Experience deleted successfully.");
   } catch (error) {
     console.error(error);
+    setDeleteMessage("Unable to delete experience.");
   }
 }
 
@@ -322,6 +325,12 @@ function handleCancelEdit() {
 
     <div className="mt-8">
       <h2 className="text-2xl font-semibold">Experiences</h2>
+
+      {deleteMessage && (
+        <p className="mt-2 text-sm">
+          {deleteMessage}
+        </p>
+      )}
 
       {loading ? (
         <p className="mt-4">Loading experiences...</p>
