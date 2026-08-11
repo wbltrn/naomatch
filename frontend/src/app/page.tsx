@@ -62,8 +62,9 @@ useEffect(() => {
   setDeleteMessage("");
 
   if (!formData.type.trim() || !formData.title.trim()) {
+  setFormMessage("Type and title are required.");
   return;
-}
+  }
 
   try {
     const savedExperience =
@@ -116,7 +117,7 @@ useEffect(() => {
 async function handleDeleteExperience(experienceId: number) {
   setFormMessage("");
   setDeleteMessage("");
-  
+
   const confirmed = window.confirm(
     "Are you sure you want to delete this experience?"
   );
