@@ -49,3 +49,9 @@ def create_experience(
     db.refresh(experience)
 
     return experience
+
+@router.get("/", response_model=list[ExperienceResponse])
+def get_experiences(
+    db: Session = Depends(get_db),
+):
+    return db.query(Experience).all()
