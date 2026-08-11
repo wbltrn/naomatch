@@ -191,6 +191,24 @@ function handleCancelEdit() {
   setBullets([""]);
 }
 
+function formatExperienceDate(date: string | null) {
+  if (!date) {
+    return "Present";
+  }
+
+  const [year, month] = date.split("-");
+
+  const formattedDate = new Date(
+    Number(year),
+    Number(month) - 1
+  );
+
+  return formattedDate.toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
+}
+
  return (
   <main className="p-8">
     <h1 className="text-3xl font-bold">Naomatch</h1>
@@ -388,9 +406,9 @@ function handleCancelEdit() {
             <p>{experience.organization}</p>
 
             <p>
-              {experience.start_date}
+              {formatExperienceDate(experience.start_date)}
               {" - "}
-              {experience.end_date ? experience.end_date : "Present"}
+              {formatExperienceDate(experience.end_date)}
             </p>
 
             <p>{experience.description}</p>
