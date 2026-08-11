@@ -74,3 +74,25 @@ def get_experience(
         )
 
     return experience
+
+@router.delete("/{experience_id}")
+def delete_experience(
+    experience_id: int,
+    db: Session = Depends(get_db),
+):
+    experience = (
+        db.query(Experience)
+        .filter(Experience.id == experience_id)
+        .first()
+    )
+
+    if experience is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Experience not found",
+        )
+
+    db.delete(experience)
+    db.commit()
+
+    return {"message": "Experience deleted"}
