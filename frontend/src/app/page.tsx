@@ -58,6 +58,9 @@ useEffect(() => {
   async function handleCreateExperience(event: React.FormEvent) {
   event.preventDefault();
 
+  setFormMessage("");
+  setDeleteMessage("");
+
   if (!formData.type.trim() || !formData.title.trim()) {
   return;
 }
@@ -111,6 +114,9 @@ useEffect(() => {
 }
 
 async function handleDeleteExperience(experienceId: number) {
+  setFormMessage("");
+  setDeleteMessage("");
+  
   const confirmed = window.confirm(
     "Are you sure you want to delete this experience?"
   );
