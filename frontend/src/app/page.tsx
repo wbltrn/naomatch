@@ -217,18 +217,35 @@ function handleEditExperience(experience: any) {
 
       <div className="space-y-2">
         {bullets.map((bullet, index) => (
-          <input
-            key={index}
-            type="text"
-            placeholder={`Resume bullet ${index + 1}`}
-            value={bullet}
-            onChange={(e) => {
-              const updatedBullets = [...bullets];
-              updatedBullets[index] = e.target.value;
-              setBullets(updatedBullets);
-            }}
-            className="block w-full rounded border p-2"
-          />
+          <div key={index} className="flex gap-2">
+            <input
+              type="text"
+              placeholder={`Resume bullet ${index + 1}`}
+              value={bullet}
+              onChange={(e) => {
+                const updatedBullets = [...bullets];
+                updatedBullets[index] = e.target.value;
+                setBullets(updatedBullets);
+              }}
+              className="block w-full rounded border p-2"
+            />
+
+            <button
+              type="button"
+              onClick={() => {
+                const updatedBullets = bullets.filter(
+                  (_, bulletIndex) => bulletIndex !== index
+                );
+
+                setBullets(
+                  updatedBullets.length > 0 ? updatedBullets : [""]
+                );
+              }}
+              className="rounded border px-3"
+            >
+              Remove
+            </button>
+          </div>
         ))}
       </div>
 
