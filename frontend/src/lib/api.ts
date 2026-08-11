@@ -44,3 +44,18 @@ export async function createExperience(experience: {
 
   return response.json();
 }
+
+export async function deleteExperience(experienceId: number) {
+  const response = await fetch(
+    `http://127.0.0.1:8000/experiences/${experienceId}`,
+    {
+      method: "DELETE",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to delete experience");
+  }
+
+  return response.json();
+}

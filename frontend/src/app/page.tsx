@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   checkBackend,
   createExperience,
+  deleteExperience,
   getExperiences,
 } from "@/lib/api";
 
@@ -65,6 +66,20 @@ useEffect(() => {
       end_date: "",
       description: "",
     });
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+async function handleDeleteExperience(experienceId: number) {
+  try {
+    await deleteExperience(experienceId);
+
+    setExperiences((currentExperiences: any[]) =>
+      currentExperiences.filter(
+        (experience) => experience.id !== experienceId
+      )
+    );
   } catch (error) {
     console.error(error);
   }
@@ -177,9 +192,16 @@ useEffect(() => {
 
           <p>{experience.organization}</p>
           <p>{experience.description}</p>
+
+          <button
+            onClick={() => handleDeleteExperience(experience.id)}
+            className="mt-3 rounded border px-3 py-1"
+          >
+            Delete
+          </button>
         </div>
       ))}
     </div>
   </main>
- );
+);
 }
