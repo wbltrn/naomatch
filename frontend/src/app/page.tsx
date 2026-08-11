@@ -1,10 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import { checkBackend } from "@/lib/api";
+import { useEffect, useState } from "react";
+import { checkBackend, getExperiences } from "@/lib/api";
 
 export default function Home() {
   const [status, setStatus] = useState("Not checked");
+
+  const [experiences, setExperiences] = useState([]);
+
+useEffect(() => {
+  async function loadExperiences() {
+    const data = await getExperiences();
+    setExperiences(data);
+  }
+
+  loadExperiences();
+}, []);
 
   async function handleCheckBackend() {
     try {
@@ -29,6 +40,19 @@ export default function Home() {
       >
         Check Backend
       </button>
+
+      <div className="mt-8">
+  <h2 className="text-2xl font-semibold">Experiences</h2>
+
+  {experiences.map((experience: any) => (
+    <div key={experience.id} className="mt-4 rounded border p-4">
+      <h3 className="text-xl font-bold">{experience.title}</h3>
+      <p>{experience.organization}</p>
+      <p>{experience.description}</p>
+    </div>
+  ))}
+</div>
+
     </main>
   );
 }
