@@ -24,7 +24,7 @@ export default function Home() {
 const [editingExperienceId, setEditingExperienceId] = useState<number | null>(
   null
 );
-const [bulletText, setBulletText] = useState("");
+const [bullets, setBullets] = useState<string[]>([""]);
 
 useEffect(() => {
   async function loadExperiences() {
@@ -56,15 +56,19 @@ useEffect(() => {
       editingExperienceId === null
       ? await createExperience({
         ...formData,
-        bullets: bulletText.trim()
-          ? [{ bullet_text: bulletText.trim() }]
-          : [],
+       bullets: bullets
+        .filter((bullet) => bullet.trim() !== "")
+        .map((bullet) => ({
+          bullet_text: bullet.trim(),
+        })),
       })
     : await updateExperience(editingExperienceId, {
         ...formData,
-        bullets: bulletText.trim()
-          ? [{ bullet_text: bulletText.trim() }]
-          : [],
+        bullets: bullets
+        .filter((bullet) => bullet.trim() !== "")
+        .map((bullet) => ({
+          bullet_text: bullet.trim(),
+        })),
       });
 
     setExperiences((currentExperiences: any[]) =>
@@ -87,7 +91,7 @@ useEffect(() => {
       description: "",
     });
     setEditingExperienceId(null);
-    setBulletText("");
+    setBullets([""]);
   } catch (error) {
     console.error(error);
   }
@@ -119,8 +123,10 @@ function handleEditExperience(experience: any) {
     end_date: experience.end_date ?? "",
     description: experience.description ?? "",
   });
-  setBulletText(
-  experience.bullets?.[0]?.bullet_text ?? ""
+  setBullets(
+  experience.bullets?.length > 0
+    ? experience.bullets.map((bullet: any) => bullet.bullet_text)
+    : [""]
 );
 }
 
@@ -209,13 +215,30 @@ function handleEditExperience(experience: any) {
         className="block w-full rounded border p-2"
       />
 
-      <input
-        type="text"
-        placeholder="Resume bullet"
-        value={bulletText}
-        onChange={(e) => setBulletText(e.target.value)}
-        className="block w-full rounded border p-2"
-      />
+      <div className="space-y-2">
+        {bullets.map((bullet, index) => (
+          <input
+            key={index}
+            type="text"
+            placeholder={`Resume bullet ${index + 1}`}
+            value={bullet}
+            onChange={(e) => {
+              const updatedBullets = [...bullets];
+              updatedBullets[index] = e.target.value;
+              setBullets(updatedBullets);
+            }}
+            className="block w-full rounded border p-2"
+          />
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setBullets([...bullets, ""])}
+        className="rounded border px-3 py-1"
+      >
+        Add Bullet
+      </button>
 
       <button
         type="submit"
