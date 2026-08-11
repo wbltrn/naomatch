@@ -6,3 +6,8 @@ app = FastAPI()
 @app.get("/")
 def root():
     return {"message": "Resumatch API is running"}
+
+
+@app.get("/health")
+def health():
+    return {"status": "healthy"}
