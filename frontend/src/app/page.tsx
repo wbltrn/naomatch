@@ -403,15 +403,18 @@ function formatExperienceDate(date: string | null) {
               {experience.title}
             </h3>
 
-            <p>{experience.organization}</p>
+            <p className="mt-1">
+              {experience.organization}
+              {experience.location ? ` • ${experience.location}` : ""}
+            </p>
 
-            <p>
-              {formatExperienceDate(experience.start_date)}
+            <p className="text-sm">
+              {experience.type} • {formatExperienceDate(experience.start_date)}
               {" - "}
               {formatExperienceDate(experience.end_date)}
             </p>
 
-            <p>{experience.description}</p>
+            <p className="mt-2">{experience.description}</p>
 
             {experience.bullets?.length > 0 && (
               <ul className="mt-2 list-disc pl-5">
