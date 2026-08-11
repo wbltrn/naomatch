@@ -65,3 +65,55 @@ def get_job(
         )
 
     return job
+
+@router.put("/{job_id}", response_model=JobPostingResponse)
+def update_job(
+    job_id: int,
+    job_data: JobPostingCreate,
+    db: Session = Depends(get_db),
+):
+    job = (
+        db.query(JobPosting)
+        .filter(JobPosting.id == job_id)
+        .first()
+    )
+
+    if job is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Job posting not found",
+        )
+
+    job.company = job_data.company
+    job.title = job_data.title
+    job.location = job_data.location
+    job.job_url = job_data.job_url
+    job.description = job_data.description
+
+    db.commit()
+    db.refresh(job)
+
+    return job
+
+
+@router.delete("/{job_id}")
+def delete_job(
+    job_id: int,
+    db: Session = Depends(get_db),
+):
+    job = (
+        db.query(JobPosting)
+        .filter(JobPosting.id == job_id)
+        .first()
+    )
+
+    if job is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Job posting not found",
+        )
+
+    db.delete(job)
+    db.commit()
+
+    return {"message": "Job posting deleted"}
