@@ -393,6 +393,8 @@ function formatExperienceDate(date: string | null) {
         <p className="mt-4">Loading experiences...</p>
       ) : error ? (
         <p className="mt-4">{error}</p>
+      ) : experiences.length === 0 ? (
+        <p className="mt-4">No experiences added yet.</p>
       ) : (
         experiences.map((experience: any) => (
           <div
