@@ -20,7 +20,7 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    return {"message": "Resumatch API is running"}
+    return {"message": "Naomatch API is running"}
 
 
 @app.get("/health")

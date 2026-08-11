@@ -17,7 +17,7 @@ export default function Home() {
 
   return (
     <main className="p-8">
-      <h1 className="text-3xl font-bold">Resumatch</h1>
+      <h1 className="text-3xl font-bold">Naomatch</h1>
 
       <p className="mt-4">
         Backend status: <strong>{status}</strong>
