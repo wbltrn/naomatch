@@ -24,6 +24,7 @@ export default function Home() {
 const [editingExperienceId, setEditingExperienceId] = useState<number | null>(
   null
 );
+const [bulletText, setBulletText] = useState("");
 
 useEffect(() => {
   async function loadExperiences() {
@@ -55,11 +56,15 @@ useEffect(() => {
       editingExperienceId === null
       ? await createExperience({
         ...formData,
-        bullets: [],
+        bullets: bulletText.trim()
+          ? [{ bullet_text: bulletText.trim() }]
+          : [],
       })
     : await updateExperience(editingExperienceId, {
         ...formData,
-        bullets: [],
+        bullets: bulletText.trim()
+          ? [{ bullet_text: bulletText.trim() }]
+          : [],
       });
 
     setExperiences((currentExperiences: any[]) =>
@@ -82,6 +87,7 @@ useEffect(() => {
       description: "",
     });
     setEditingExperienceId(null);
+    setBulletText("");
   } catch (error) {
     console.error(error);
   }
@@ -113,6 +119,9 @@ function handleEditExperience(experience: any) {
     end_date: experience.end_date ?? "",
     description: experience.description ?? "",
   });
+  setBulletText(
+  experience.bullets?.[0]?.bullet_text ?? ""
+);
 }
 
  return (
@@ -200,6 +209,14 @@ function handleEditExperience(experience: any) {
         className="block w-full rounded border p-2"
       />
 
+      <input
+        type="text"
+        placeholder="Resume bullet"
+        value={bulletText}
+        onChange={(e) => setBulletText(e.target.value)}
+        className="block w-full rounded border p-2"
+      />
+
       <button
         type="submit"
         className="rounded bg-black px-4 py-2 text-white"
@@ -222,6 +239,14 @@ function handleEditExperience(experience: any) {
 
           <p>{experience.organization}</p>
           <p>{experience.description}</p>
+
+          {experience.bullets?.length > 0 && (
+            <ul className="mt-2 list-disc pl-5">
+              {experience.bullets.map((bullet: any) => (
+                <li key={bullet.id}>{bullet.bullet_text}</li>
+              ))}
+            </ul>
+          )}
 
           <button
             onClick={() => handleEditExperience(experience)}
