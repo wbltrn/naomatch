@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
@@ -55,3 +55,22 @@ def get_experiences(
     db: Session = Depends(get_db),
 ):
     return db.query(Experience).all()
+
+@router.get("/{experience_id}", response_model=ExperienceResponse)
+def get_experience(
+    experience_id: int,
+    db: Session = Depends(get_db),
+):
+    experience = (
+        db.query(Experience)
+        .filter(Experience.id == experience_id)
+        .first()
+    )
+
+    if experience is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Experience not found",
+        )
+
+    return experience
