@@ -66,6 +66,15 @@ useEffect(() => {
   return;
   }
 
+  if (
+  formData.start_date &&
+  formData.end_date &&
+  formData.end_date < formData.start_date
+  ) {
+  setFormMessage("End date cannot be before start date.");
+  return;
+  }
+
   try {
     const savedExperience =
       editingExperienceId === null
