@@ -96,3 +96,45 @@ def delete_experience(
     db.commit()
 
     return {"message": "Experience deleted"}
+
+@router.put("/{experience_id}", response_model=ExperienceResponse)
+def update_experience(
+    experience_id: int,
+    experience_data: ExperienceCreate,
+    db: Session = Depends(get_db),
+):
+    experience = (
+        db.query(Experience)
+        .filter(Experience.id == experience_id)
+        .first()
+    )
+
+    if experience is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Experience not found",
+        )
+
+    experience.type = experience_data.type
+    experience.organization = experience_data.organization
+    experience.title = experience_data.title
+    experience.location = experience_data.location
+    experience.start_date = experience_data.start_date
+    experience.end_date = experience_data.end_date
+    experience.description = experience_data.description
+
+    db.query(ExperienceBullet).filter(
+        ExperienceBullet.experience_id == experience_id
+    ).delete()
+
+    for bullet in experience_data.bullets:
+        experience_bullet = ExperienceBullet(
+            experience_id=experience.id,
+            bullet_text=bullet.bullet_text,
+        )
+        db.add(experience_bullet)
+
+    db.commit()
+    db.refresh(experience)
+
+    return experience
