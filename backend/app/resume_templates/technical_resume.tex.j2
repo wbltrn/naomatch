@@ -116,26 +116,16 @@
 \textbf{\Huge \scshape {{ contact.name | latex }}} \ \vspace{1pt}
 
 \small
-
-{% if contact.phone %}
-{{ contact.phone | latex }}
-{% endif %}
-
-{% if contact.email %}
-$|$
-\href{mailto:{{ contact.email }}}{{ contact.email | latex }}
-{% endif %}
-
-{% if contact.linkedin %}
-$|$
-\href{https://{{ contact.linkedin }}}{{ contact.linkedin | latex }}
-{% endif %}
-
-{% if contact.github %}
-$|$
-\href{https://{{ contact.github }}}{{ contact.github | latex }}
-{% endif %}
-
+{%- if contact.get("phone") -%}
+{{ contact.get("phone") | latex }}
+{%- endif -%}
+{%- if contact.get("email") -%}
+{%- if contact.get("phone") %} $|$ {% endif -%}
+\href{mailto:{{ contact.get("email") }}}{{ contact.get("email") | latex }}
+{%- endif -%}
+{%- for link in contact.get("links", []) -%}
+ $|$ \href{ {{ link.url }} }{ {{ link.label | latex }} }
+{%- endfor %}
 \end{center}
 
 
@@ -166,7 +156,7 @@ $|$
 
 \resumeSubHeadingListStart
 
-{% for item in section.items %}
+{% for item in section.get("items", []) %}
 
 \resumeSubheading
 { {{ item.get("school", "") | latex }} }
@@ -208,7 +198,7 @@ $|$
 
 \resumeSubHeadingListStart
 
-{% for item in section.items %}
+{% for item in section.get("items", []) %}
 
 \resumeProjectHeading
 {
@@ -256,7 +246,7 @@ $|$
 
 \item{
 
-{% for item in section.items %}
+{% for item in section.get("items", []) %}
 
 {% if item.get("category") and item.get("skills") %}
 
@@ -301,7 +291,7 @@ $|$
 
 \resumeSubHeadingListStart
 
-{% for item in section.items %}
+{% for item in section.get("items", []) %}
 
 \resumeSubheading
 { {{ item.get("title", "") | latex }} }

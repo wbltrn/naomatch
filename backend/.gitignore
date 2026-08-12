@@ -1,3 +1,10 @@
 venv/
 __pycache__/
 .env
+
+# Generated resume test artifacts
+test_tailored_resume.tex
+test_tailored_resume.pdf
+test_tailored_resume.aux
+test_tailored_resume.log
+test_tailored_resume.out

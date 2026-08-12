@@ -36,8 +36,9 @@ def create_template_environment() -> Environment:
         autoescape=False,
         trim_blocks=True,
         lstrip_blocks=True,
+        comment_start_string="<#",
+        comment_end_string="#>",
     )
-
     environment.filters["latex"] = latex_escape
 
     return environment
