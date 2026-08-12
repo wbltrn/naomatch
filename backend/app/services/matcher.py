@@ -2,6 +2,7 @@ import re
 
 from app.models.experience import Experience
 from app.models.job import JobPosting
+from app.services.semantic_matcher import analyze_semantic_match
 
 ENGINEERING_SKILLS = {
     "software": {
@@ -420,6 +421,18 @@ def calculate_experience_match(
         reverse=True,
     )
 
+    semantic_match = analyze_semantic_match(
+        job_title=job.title,
+        job_description=job.description,
+        experience_title=experience.title,
+        experience_organization=experience.organization,
+        experience_description=experience.description,
+        experience_bullets=[
+            bullet.bullet_text
+            for bullet in experience.bullets
+        ],
+    )
+
     match_score = calculate_match_score(
         matched_keywords=matched_keywords,
         job_keywords=job_keywords,
@@ -428,12 +441,19 @@ def calculate_experience_match(
         job_skills=job_skills,
     )
 
+    final_score = round(
+        (match_score * 0.35)
+        + (semantic_match.semantic_score * 0.65),
+        2,
+    )
 
     return {
         "experience_id": experience.id,
         "title": experience.title,
         "organization": experience.organization,
-        "match_score": match_score,
+        "deterministic_score": match_score,
+        "final_score": final_score,
+        "semantic_match": semantic_match,
         "matched_keywords": matched_keywords,
         "matched_skills": matched_skills,
         "related_skill_matches": related_skill_matches,

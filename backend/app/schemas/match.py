@@ -18,7 +18,9 @@ class ExperienceMatchResponse(BaseModel):
     experience_id: int
     title: str
     organization: str | None = None
-    match_score: float
+    deterministic_score: float
+    final_score: float | None = None
+    semantic_match: SemanticMatchResponse | None = None
     matched_keywords: list[str]
     matched_skills: list[str]
     related_skill_matches: list[dict[str, str]]

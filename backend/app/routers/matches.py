@@ -51,6 +51,6 @@ def match_experiences_to_job(
 
     return sorted(
         matches,
-        key=lambda match: match["match_score"],
+        key=lambda match: match["final_score"],
         reverse=True,
     )
