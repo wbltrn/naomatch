@@ -3,7 +3,12 @@ from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
 from app.models.application import Application
-from app.schemas.application import ApplicationCreate, ApplicationResponse
+
+from app.schemas.application import (
+    ApplicationCreate,
+    ApplicationResponse,
+    ApplicationUpdate,
+)
 
 router = APIRouter(
     prefix="/applications",
@@ -65,3 +70,53 @@ def get_application(
         )
 
     return application
+
+@router.put("/{application_id}", response_model=ApplicationResponse)
+def update_application(
+    application_id: int,
+    application_data: ApplicationUpdate,
+    db: Session = Depends(get_db),
+):
+    application = (
+        db.query(Application)
+        .filter(Application.id == application_id)
+        .first()
+    )
+
+    if application is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Application not found",
+        )
+
+    application.status = application_data.status
+    application.applied_date = application_data.applied_date
+    application.deadline = application_data.deadline
+    application.notes = application_data.notes
+
+    db.commit()
+    db.refresh(application)
+
+    return application
+
+@router.delete("/{application_id}")
+def delete_application(
+    application_id: int,
+    db: Session = Depends(get_db),
+):
+    application = (
+        db.query(Application)
+        .filter(Application.id == application_id)
+        .first()
+    )
+
+    if application is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Application not found",
+        )
+
+    db.delete(application)
+    db.commit()
+
+    return {"message": "Application deleted"}

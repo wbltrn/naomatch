@@ -10,6 +10,11 @@ class ApplicationCreate(BaseModel):
     deadline: date | None = None
     notes: str | None = None
 
+class ApplicationUpdate(BaseModel):
+    status: str
+    applied_date: date | None = None
+    deadline: date | None = None
+    notes: str | None = None
 
 class ApplicationResponse(ApplicationCreate):
     id: int
