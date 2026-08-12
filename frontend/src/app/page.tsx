@@ -705,6 +705,10 @@ const filteredApplications = sortedApplications.filter(
             (1000 * 60 * 60 * 24)
         );
 
+        if (deadlineFilter === "due-today") {
+          matchesDeadline = daysRemaining === 0;
+        }
+
         if (deadlineFilter === "due-soon") {
           matchesDeadline =
             daysRemaining >= 0 && daysRemaining <= 7;
@@ -1480,6 +1484,7 @@ return (
         className="mt-3 rounded border p-2"
       >
         <option value="all">All Deadlines</option>
+        <option value="due-today">Due Today</option>
         <option value="due-soon">Due Within 7 Days</option>
         <option value="due-30">Due Within 30 Days</option>
         <option value="past-due">Past Due</option>
