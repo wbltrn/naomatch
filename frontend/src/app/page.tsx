@@ -100,13 +100,21 @@ async function loadApplications() {
     const data = await getApplications();
     setApplications(data);
     setApplicationDeleteMessage(
-    "Application deleted successfully."
-);
+      "Application deleted successfully."
+    );
+
+    setTimeout(() => {
+      setApplicationDeleteMessage("");
+    }, 5000);
   } catch (error) {
   console.error(error);
     setApplicationDeleteMessage(
       "Unable to delete application."
     );
+
+    setTimeout(() => {
+      setApplicationDeleteMessage("");
+    }, 5000);
   }
 }
 
@@ -188,10 +196,17 @@ async function loadApplications() {
     setEditingExperienceId(null);
     setIsCurrent(false);
     setFormMessage("Experience saved successfully.");
+
+    setTimeout(() => {
+      setFormMessage("");
+    }, 5000);
     setBullets([""]);
  } catch (error) {
   console.error(error);
   setFormMessage("Unable to save experience.");
+  setTimeout(() => {
+    setFormMessage("");
+  }, 5000);
  }
 }
 
@@ -216,9 +231,15 @@ async function handleDeleteExperience(experienceId: number) {
       )
     );
     setDeleteMessage("Experience deleted successfully.");
+    setTimeout(() => {
+      setDeleteMessage("");
+    }, 5000);
   } catch (error) {
     console.error(error);
     setDeleteMessage("Unable to delete experience.");
+    setTimeout(() => {
+      setDeleteMessage("");
+    }, 5000);
   }
 }
 
@@ -333,9 +354,16 @@ async function handleCreateJob(event: React.FormEvent) {
     });
     setEditingJobId(null);
     setJobFormMessage("Job posting saved successfully.");
+
+    setTimeout(() => {
+      setJobFormMessage("");
+    }, 5000);
   } catch (error) {
     console.error(error);
     setJobFormMessage("Unable to save job posting.");
+    setTimeout(() => {
+      setJobFormMessage("");
+    }, 5000);
   }
 }
 
@@ -358,9 +386,17 @@ async function handleDeleteJob(jobId: number) {
       currentJobs.filter((job) => job.id !== jobId)
     );
     setJobDeleteMessage("Job posting deleted successfully.");
+    
+    setTimeout(() => {
+      setJobDeleteMessage("");
+    }, 5000);
   } catch (error) {
     console.error(error);
     setJobDeleteMessage("Unable to delete job posting.");
+
+    setTimeout(() => {
+      setJobDeleteMessage("");
+    }, 5000);
   }
 }
 
