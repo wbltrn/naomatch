@@ -1,7 +1,7 @@
 from sqlalchemy import BigInteger, Column, DateTime, String, Text
 from sqlalchemy.sql import func
 
-from app.models.experience import Base
+from app.database import Base
 
 
 class JobPosting(Base):

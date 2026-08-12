@@ -2,7 +2,7 @@ from sqlalchemy import BigInteger, Column, Date, DateTime, ForeignKey, String, T
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from app.models.experience import Base
+from app.database import Base
 
 
 class Application(Base):

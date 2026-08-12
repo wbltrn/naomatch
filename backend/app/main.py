@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
-from app.database import engine
+from app.database import Base, engine
 
 from app.routers.experiences import router as experiences_router
 
@@ -10,6 +10,10 @@ from app.routers.jobs import router as jobs_router
 from app.routers.applications import router as applications_router
 
 from app.routers.matches import router as matches_router
+
+from app.models.semantic_match_cache import SemanticMatchCache
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
