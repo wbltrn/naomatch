@@ -463,6 +463,10 @@ function handleCancelApplicationEdit() {
   });
 }
 
+function getJobForApplication(jobId: number) {
+  return jobs.find((job: any) => job.id === jobId);
+}
+
 return (
   <main className="p-8">
     <h1 className="text-3xl font-bold">Naomatch</h1>
@@ -1094,10 +1098,17 @@ return (
               </p>
             )}
 
-            <p className="mt-2 text-sm">
-              Job ID: {application.job_id}
-            </p>
+            {(() => {
+              const job = getJobForApplication(application.job_id);
 
+              return (
+                <p className="mt-2 text-sm">
+                  {job
+                    ? `${job.company} — ${job.title}`
+                    : `Job ID: ${application.job_id}`}
+                </p>
+              );
+            })()}
             <button
               onClick={() => handleEditApplication(application)}
               className="mt-3 mr-2 rounded border px-3 py-1"
