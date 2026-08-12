@@ -669,6 +669,17 @@ function handleCancelJobEdit() {
                 <p>{job.location}</p>
               )}
 
+              {job.job_url && (
+                <a
+                  href={job.job_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 block underline"
+                >
+                  View Job Posting
+                </a>
+              )}
+
               <p className="mt-2">
                 {job.description}
               </p>
