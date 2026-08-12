@@ -758,6 +758,12 @@ function formatApplicationDate(date: string | null) {
   );
 }
 
+function handleClearApplicationFilters() {
+  setApplicationStatusFilter("All");
+  setApplicationSearch("");
+  setApplicationSort("status");
+}
+
 return (
   <main className="p-8">
     <h1 className="text-3xl font-bold">Naomatch</h1>
@@ -1392,6 +1398,14 @@ return (
         onChange={(e) => setApplicationSearch(e.target.value)}
         className="mt-3 block w-full rounded border p-2"
       />
+
+      <button
+        type="button"
+        onClick={handleClearApplicationFilters}
+        className="mt-3 rounded border px-3 py-2"
+      >
+        Clear Filters
+      </button>
 
       {applicationDeleteMessage && (
         <p className="mt-2 text-sm">
