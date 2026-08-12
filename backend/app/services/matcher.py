@@ -335,30 +335,62 @@ def calculate_match_score(
 def calculate_bullet_semantic_boost(
     bullet_text: str,
     semantic_match,
-) -> float:
+) -> tuple[float, float, float]:
     bullet_keywords = normalize_text(bullet_text)
 
-    semantic_evidence = " ".join(
-        semantic_match.matched_responsibilities
-        + semantic_match.strengths
+    responsibility_keywords = normalize_text(
+        " ".join(
+            semantic_match.matched_responsibilities
+        )
     )
 
-    semantic_keywords = normalize_text(semantic_evidence)
-
-    if not semantic_keywords:
-        return 0.0
-
-    overlap = bullet_keywords.intersection(
-        semantic_keywords
+    strength_keywords = normalize_text(
+        " ".join(
+            semantic_match.strengths
+        )
     )
 
-    overlap_ratio = len(overlap) / len(
-        semantic_keywords
+    responsibility_overlap = bullet_keywords.intersection(
+        responsibility_keywords
     )
 
-    return min(
-        25.0,
-        round(overlap_ratio * 100, 2),
+    strength_overlap = bullet_keywords.intersection(
+        strength_keywords
+    )
+
+    responsibility_boost = 0.0
+    if responsibility_keywords:
+        responsibility_boost = min(
+            15.0,
+            round(
+                len(responsibility_overlap)
+                / len(responsibility_keywords)
+                * 100,
+                2,
+            ),
+        )
+
+    strength_boost = 0.0
+    if strength_keywords:
+        strength_boost = min(
+            10.0,
+            round(
+                len(strength_overlap)
+                / len(strength_keywords)
+                * 100,
+                2,
+            ),
+        )
+
+    semantic_boost = round(
+        responsibility_boost + strength_boost,
+        2,
+    )
+
+    return (
+        semantic_boost,
+        responsibility_boost,
+        strength_boost,
     )
 
 def calculate_bullet_match(
@@ -393,7 +425,11 @@ def calculate_bullet_match(
         job_skills=job_skills,
     )
 
-    semantic_boost = calculate_bullet_semantic_boost(
+    (
+        semantic_boost,
+        responsibility_boost,
+        strength_boost,
+    ) = calculate_bullet_semantic_boost(
         bullet.bullet_text,
         semantic_match,
     )
@@ -408,6 +444,8 @@ def calculate_bullet_match(
         "bullet_text": bullet.bullet_text,
         "match_score": match_score,
         "semantic_boost": semantic_boost,
+        "responsibility_boost": responsibility_boost,
+        "strength_boost": strength_boost,
         "matched_keywords": matched_keywords,
         "matched_skills": matched_skills,
         "related_skill_matches": related_skill_matches,
