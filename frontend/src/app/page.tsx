@@ -764,6 +764,21 @@ const applicationCounts = {
 
     return deadlineDate < today;
   }).length,
+
+  dueToday: applications.filter((application: any) => {
+    if (!application.deadline) {
+      return false;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const deadlineDate = new Date(
+      `${application.deadline}T00:00:00`
+    );
+
+    return deadlineDate.getTime() === today.getTime();
+  }).length,
 };
 
 function getDeadlineMessage(deadline: string | null) {
@@ -1431,6 +1446,7 @@ return (
         <span>Rejected: {applicationCounts.rejected}</span>
         <span>Withdrawn: {applicationCounts.withdrawn}</span>
         <span>Overdue: {applicationCounts.overdue}</span>
+        <span>Due Today: {applicationCounts.dueToday}</span>
       </div>
 
       <select
