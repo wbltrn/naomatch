@@ -1,3 +1,5 @@
+import hashlib
+import json
 import os
 
 from dotenv import load_dotenv
@@ -5,6 +7,10 @@ from google import genai
 from google.genai import errors
 
 from app.schemas.resume import TailoredResumeContent
+
+from sqlalchemy.orm import Session
+
+from app.models.resume_tailor_cache import ResumeTailorCache
 
 
 load_dotenv()
@@ -14,14 +20,62 @@ client = genai.Client(
     api_key=os.getenv("GEMINI_API_KEY")
 )
 
+RESUME_TAILOR_CACHE: dict[str, TailoredResumeContent] = {}
+
 class ResumeTailoringUnavailableError(Exception):
     pass
 
+def build_resume_tailor_cache_key(
+    job_title: str,
+    job_description: str,
+    experiences: list[dict],
+) -> str:
+    payload = {
+        "job_title": job_title,
+        "job_description": job_description,
+        "experiences": experiences,
+    }
+
+    serialized_payload = json.dumps(
+        payload,
+        sort_keys=True,
+        ensure_ascii=False,
+    )
+
+    return hashlib.sha256(
+        serialized_payload.encode("utf-8")
+    ).hexdigest()
+
 def tailor_resume_content(
+    db: Session,
     job_title: str,
     job_description: str,
     experiences: list[dict],
 ) -> TailoredResumeContent:
+    cache_key = build_resume_tailor_cache_key(
+        job_title=job_title,
+        job_description=job_description,
+        experiences=experiences,
+    )
+
+    if cache_key in RESUME_TAILOR_CACHE:
+        return RESUME_TAILOR_CACHE[cache_key]
+
+    cached_record = (
+        db.query(ResumeTailorCache)
+        .filter(ResumeTailorCache.cache_key == cache_key)
+        .first()
+    )
+
+    if cached_record is not None:
+        tailored_resume = TailoredResumeContent.model_validate_json(
+            cached_record.tailored_resume
+        )
+
+        RESUME_TAILOR_CACHE[cache_key] = tailored_resume
+
+        return tailored_resume
+
     experience_text = "\n\n".join(
         f"""
 Experience ID: {experience["id"]}
@@ -89,6 +143,18 @@ Return structured resume-tailoring data following the provided schema.
             "Resume tailoring is temporarily unavailable because the AI service quota was reached."
         ) from error
 
-    return TailoredResumeContent.model_validate_json(
-        response.text
-    )
+        tailored_resume = TailoredResumeContent.model_validate_json(
+            response.text
+        )
+
+        cached_record = ResumeTailorCache(
+            cache_key=cache_key,
+            tailored_resume=tailored_resume.model_dump_json(),
+        )
+
+        db.add(cached_record)
+        db.commit()
+
+        RESUME_TAILOR_CACHE[cache_key] = tailored_resume
+
+        return tailored_resume

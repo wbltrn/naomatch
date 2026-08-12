@@ -64,6 +64,7 @@ def tailor_resume_for_job(
 
     try:
         return tailor_resume_content(
+            db=db,
             job_title=job.title,
             job_description=job.description,
             experiences=experience_payload,

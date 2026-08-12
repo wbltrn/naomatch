@@ -13,6 +13,8 @@ from app.routers.matches import router as matches_router
 
 from app.models.semantic_match_cache import SemanticMatchCache
 
+from app.models.resume_tailor_cache import ResumeTailorCache
+
 from app.routers.resume_tailor import router as resume_tailor_router
 
 Base.metadata.create_all(bind=engine)
