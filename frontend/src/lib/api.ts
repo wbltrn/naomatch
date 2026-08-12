@@ -105,7 +105,7 @@ export async function createJob(job: {
   company: string;
   title: string;
   location?: string;
-  job_url?: string;
+  job_url?: string | null;
   description: string;
 }) {
   const response = await fetch("http://127.0.0.1:8000/jobs/", {
@@ -129,7 +129,7 @@ export async function updateJob(
     company: string;
     title: string;
     location?: string;
-    job_url?: string;
+    job_url?: string | null;
     description: string;
   }
 ) {

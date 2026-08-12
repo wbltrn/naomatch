@@ -266,10 +266,15 @@ async function handleCreateJob(event: React.FormEvent) {
   }
 
   try {
+    const jobPayload = {
+      ...jobFormData,
+      job_url: jobFormData.job_url.trim() || null,
+    };
+
     const savedJob =
       editingJobId === null
-        ? await createJob(jobFormData)
-        : await updateJob(editingJobId, jobFormData);
+        ? await createJob(jobPayload)
+        : await updateJob(editingJobId, jobPayload);
 
     setJobs((currentJobs: any[]) =>
       editingJobId === null
