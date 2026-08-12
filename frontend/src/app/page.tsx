@@ -807,7 +807,8 @@ function handleClearApplicationFilters() {
 const hasActiveApplicationFilters =
   applicationStatusFilter !== "All" ||
   applicationSearch.trim() !== "" ||
-  applicationSort !== "status";
+  applicationSort !== "status" ||
+  deadlineFilter !== "all";
 
 return (
   <main className="p-8">
