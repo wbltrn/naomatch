@@ -551,6 +551,9 @@ const applicationCounts = {
   rejected: applications.filter(
     (application: any) => application.status === "Rejected"
   ).length,
+  withdrawn: applications.filter(
+    (application: any) => application.status === "Withdrawn"
+  ).length,
 };
 
 return (
@@ -1152,6 +1155,7 @@ return (
         <span>Interviews: {applicationCounts.interview}</span>
         <span>Offers: {applicationCounts.offer}</span>
         <span>Rejected: {applicationCounts.rejected}</span>
+        <span>Withdrawn: {applicationCounts.withdrawn}</span>
       </div>
 
       {applicationDeleteMessage && (
