@@ -60,6 +60,9 @@ const [applicationStatusFilter, setApplicationStatusFilter] =
   useState("All");
 const [applicationSearch, setApplicationSearch] = useState("");
 
+const [applicationSort, setApplicationSort] =
+  useState("status");
+
 const [bullets, setBullets] = useState<string[]>([""]);
 const [loading, setLoading] = useState(true);
 const [error, setError] = useState("");
@@ -579,6 +582,63 @@ const applicationStatusOrder: Record<string, number> = {
 
 const sortedApplications = [...applications].sort(
   (a: any, b: any) => {
+    if (applicationSort === "deadline-soonest") {
+      if (!a.deadline && !b.deadline) {
+        return 0;
+      }
+
+      if (!a.deadline) {
+        return 1;
+      }
+
+      if (!b.deadline) {
+        return -1;
+      }
+
+      return (
+        new Date(`${a.deadline}T00:00:00`).getTime() -
+        new Date(`${b.deadline}T00:00:00`).getTime()
+      );
+    }
+
+    if (applicationSort === "deadline-latest") {
+      if (!a.deadline && !b.deadline) {
+        return 0;
+      }
+
+      if (!a.deadline) {
+        return 1;
+      }
+
+      if (!b.deadline) {
+        return -1;
+      }
+
+      return (
+        new Date(`${b.deadline}T00:00:00`).getTime() -
+        new Date(`${a.deadline}T00:00:00`).getTime()
+      );
+    }
+
+    if (applicationSort === "recently-applied") {
+      if (!a.applied_date && !b.applied_date) {
+        return 0;
+      }
+
+      if (!a.applied_date) {
+        return 1;
+      }
+
+      if (!b.applied_date) {
+        return -1;
+      }
+
+      return (
+        new Date(`${b.applied_date}T00:00:00`).getTime() -
+        new Date(`${a.applied_date}T00:00:00`).getTime()
+      );
+    }
+
     const statusDifference =
       (applicationStatusOrder[a.status] ?? 99) -
       (applicationStatusOrder[b.status] ?? 99);
@@ -1312,6 +1372,17 @@ return (
         <option value="Offer">Offer</option>
         <option value="Rejected">Rejected</option>
         <option value="Withdrawn">Withdrawn</option>
+      </select>
+
+      <select
+        value={applicationSort}
+        onChange={(e) => setApplicationSort(e.target.value)}
+        className="mt-3 rounded border p-2"
+      >
+        <option value="status">Status Priority</option>
+        <option value="deadline-soonest">Deadline: Soonest</option>
+        <option value="deadline-latest">Deadline: Latest</option>
+        <option value="recently-applied">Recently Applied</option>
       </select>
 
       <input
