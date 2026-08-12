@@ -14,6 +14,7 @@ class BulletMatchResponse(BaseModel):
     bullet_id: int
     bullet_text: str
     match_score: float
+    match_label: str
     semantic_boost: float
     responsibility_boost: float
     strength_boost: float

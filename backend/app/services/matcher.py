@@ -393,6 +393,17 @@ def calculate_bullet_semantic_boost(
         strength_boost,
     )
 
+def get_bullet_match_label(
+    match_score: float,
+) -> str:
+    if match_score >= 70:
+        return "Strong Match"
+
+    if match_score >= 40:
+        return "Moderate Match"
+
+    return "Weak Match"
+
 def calculate_bullet_match(
     bullet,
     job: JobPosting,
@@ -439,10 +450,15 @@ def calculate_bullet_match(
         round(match_score + semantic_boost, 2),
     )
 
+    match_label = get_bullet_match_label(
+        match_score
+    )
+
     return {
         "bullet_id": bullet.id,
         "bullet_text": bullet.bullet_text,
         "match_score": match_score,
+        "match_label": match_label,
         "semantic_boost": semantic_boost,
         "responsibility_boost": responsibility_boost,
         "strength_boost": strength_boost,
