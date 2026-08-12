@@ -519,6 +519,21 @@ function getApplicationStatusClasses(status: string) {
   }
 }
 
+const applicationStatusOrder: Record<string, number> = {
+  Interview: 1,
+  Offer: 2,
+  Applied: 3,
+  Interested: 4,
+  Rejected: 5,
+  Withdrawn: 6,
+};
+
+const sortedApplications = [...applications].sort(
+  (a: any, b: any) =>
+    (applicationStatusOrder[a.status] ?? 99) -
+    (applicationStatusOrder[b.status] ?? 99)
+);
+
 return (
   <main className="p-8">
     <h1 className="text-3xl font-bold">Naomatch</h1>
@@ -1122,7 +1137,7 @@ return (
           No applications tracked yet.
         </p>
       ) : (
-        applications.map((application: any) => (
+        sortedApplications.map((application: any) => (
           <div
             key={application.id}
             className="mt-4 rounded border p-4"
