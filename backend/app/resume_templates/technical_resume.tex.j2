@@ -1,0 +1,349 @@
+%-------------------------
+% Naomatch Dynamic Resume Template
+% Based on Wili Eduardo Beltran Salinas resume format
+%-------------------------
+
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+\input{glyphtounicode}
+
+%----------FONT OPTIONS----------
+% Sans-serif
+% \usepackage[sfdefault]{FiraSans}
+% \usepackage[sfdefault]{roboto}
+% \usepackage[sfdefault]{noto-sans}
+% \usepackage[default]{sourcesanspro}
+
+% Serif
+% \usepackage{CormorantGaramond}
+% \usepackage{charter}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+%----------MARGINS----------
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-0.5in}
+\addtolength{\textheight}{1.0in}
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+
+\setlength{\tabcolsep}{0in}
+
+%----------SECTION FORMATTING----------
+\titleformat{\section}{
+\vspace{-10pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-7pt}]
+
+% Ensure generated PDF is machine-readable and ATS-parsable
+\pdfgentounicode=1
+
+
+%-------------------------
+% CUSTOM COMMANDS
+%-------------------------
+
+\newcommand{\resumeItem}[1]{
+\item\small{
+{#1 \vspace{-2pt}}
+}
+}
+
+\newcommand{\resumeSubheading}[4]{
+\vspace{-4pt}\item
+\begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+\textbf{#1} & #2 \\
+\textit{\small #3} & \textit{\small #4} \\
+\end{tabular*}\vspace{-10pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+\item
+\begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+\small #1 & #2 \\
+\end{tabular*}\vspace{-7pt}
+}
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\resumeSubHeadingListStart}{
+\begin{itemize}[leftmargin=0.15in, label={}]
+}
+
+\newcommand{\resumeSubHeadingListEnd}{
+\end{itemize}
+}
+
+\newcommand{\resumeItemListStart}{
+\begin{itemize}
+}
+
+\newcommand{\resumeItemListEnd}{
+\end{itemize}\vspace{-5pt}
+}
+
+
+%-------------------------------------------
+% RESUME STARTS HERE
+%-------------------------------------------
+
+\begin{document}
+
+
+%----------HEADING----------
+
+\begin{center}
+\textbf{\Huge \scshape {{ contact.name | latex }}} \ \vspace{1pt}
+
+\small
+
+{% if contact.phone %}
+{{ contact.phone | latex }}
+{% endif %}
+
+{% if contact.email %}
+$|$
+\href{mailto:{{ contact.email }}}{{ contact.email | latex }}
+{% endif %}
+
+{% if contact.linkedin %}
+$|$
+\href{https://{{ contact.linkedin }}}{{ contact.linkedin | latex }}
+{% endif %}
+
+{% if contact.github %}
+$|$
+\href{https://{{ contact.github }}}{{ contact.github | latex }}
+{% endif %}
+
+\end{center}
+
+
+%-------------------------------------------
+% DYNAMIC SECTIONS
+%-------------------------------------------
+
+{% for section_type in section_order %}
+
+{% set matching_sections =
+    sections
+    | selectattr("section_type", "equalto", section_type)
+    | list
+%}
+
+{% if matching_sections %}
+
+{% set section = matching_sections[0] %}
+
+
+%-------------------------------------------
+% EDUCATION SECTION
+%-------------------------------------------
+
+{% if section.section_type == "education" %}
+
+\section{ {{ section.title | latex }} }
+
+\resumeSubHeadingListStart
+
+{% for item in section.items %}
+
+\resumeSubheading
+{ {{ item.get("school", "") | latex }} }
+{ {{ item.get("location", "") | latex }} }
+{
+    {{ item.get("degree", "") | latex }}
+    {% if item.get("minor") %}
+    , {{ item.get("minor") | latex }}
+    {% endif %}
+    {% if item.get("gpa") %}
+    ; GPA: {{ item.get("gpa") | latex }}
+    {% endif %}
+}
+{ {{ item.get("graduation_date", "") | latex }} }
+
+{% if item.get("coursework") %}
+\resumeItemListStart
+
+\resumeItem{
+\textbf{Coursework:}
+{{ item.get("coursework") | map("latex") | join(", ") }}
+}
+
+\resumeItemListEnd
+{% endif %}
+
+{% endfor %}
+
+\resumeSubHeadingListEnd
+
+
+%-------------------------------------------
+% PROJECT-STYLE SECTION
+%-------------------------------------------
+
+{% elif section.section_type in ["projects", "project"] %}
+
+\section{ {{ section.title | latex }} }
+
+\resumeSubHeadingListStart
+
+{% for item in section.items %}
+
+\resumeProjectHeading
+{
+    \textbf{ {{ item.get("name", item.get("title", "")) | latex }} }
+
+    {% if item.get("technologies") %}
+    $|$
+    \emph{
+        {{ item.get("technologies") | map("latex") | join(", ") }}
+    }
+    {% endif %}
+}
+{ {{ item.get("date", "") | latex }} }
+
+{% if item.get("bullets") %}
+\resumeItemListStart
+
+{% for bullet in item.get("bullets") %}
+\resumeItem{
+{{ bullet | latex }}
+}
+{% endfor %}
+
+\resumeItemListEnd
+{% endif %}
+
+{% endfor %}
+
+\resumeSubHeadingListEnd
+
+
+%-------------------------------------------
+% SKILLS SECTION
+%-------------------------------------------
+
+{% elif section.section_type in ["skills", "technical_skills"] %}
+
+\section{ {{ section.title | latex }} }
+
+\vspace{-2pt}
+
+\begin{itemize}[leftmargin=0.12in, label={}, itemsep=0pt, topsep=0pt]
+
+\footnotesize{
+
+\item{
+
+{% for item in section.items %}
+
+{% if item.get("category") and item.get("skills") %}
+
+\textbf{ {{ item.get("category") | latex }}: }
+{{ item.get("skills") | map("latex") | join(", ") }}
+
+{% if not loop.last %}
+\\
+{% endif %}
+
+{% endif %}
+
+{% endfor %}
+
+}
+
+}
+
+\end{itemize}
+
+\vspace{-8pt}
+
+
+%-------------------------------------------
+% GENERIC SUBHEADING SECTION
+%
+% Handles:
+% Experience
+% Research
+% Clinical Experience
+% Leadership & Involvement
+% Extracurriculars
+% Teaching
+% Volunteering
+% Engineering Teams
+% etc.
+%-------------------------------------------
+
+{% else %}
+
+\section{ {{ section.title | latex }} }
+
+\resumeSubHeadingListStart
+
+{% for item in section.items %}
+
+\resumeSubheading
+{ {{ item.get("title", "") | latex }} }
+{
+    {% if item.get("start_date") %}
+    {{ item.get("start_date") | latex }}
+    {% endif %}
+
+    {% if item.get("start_date") and item.get("end_date") %}
+    --
+    {% endif %}
+
+    {% if item.get("end_date") %}
+    {{ item.get("end_date") | latex }}
+    {% endif %}
+}
+{ {{ item.get("organization", "") | latex }} }
+{ {{ item.get("location", "") | latex }} }
+
+{% if item.get("bullets") %}
+\resumeItemListStart
+
+{% for bullet in item.get("bullets") %}
+\resumeItem{
+{{ bullet | latex }}
+}
+{% endfor %}
+
+\resumeItemListEnd
+{% endif %}
+
+{% endfor %}
+
+\resumeSubHeadingListEnd
+
+{% endif %}
+
+
+{% endif %}
+
+{% endfor %}
+
+
+%-------------------------------------------
+\end{document}

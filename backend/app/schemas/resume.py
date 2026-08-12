@@ -8,15 +8,45 @@ class TailoredBullet(BaseModel):
     reason: str
 
 
-class TailoredExperience(BaseModel):
-    experience_id: int
+class ResumeSectionItem(BaseModel):
+    id: int | None = None
+
+    # Common entry fields
+    title: str | None = None
+    organization: str | None = None
+    location: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+    description: str | None = None
+
+    # Education-specific fields
+    school: str | None = None
+    degree: str | None = None
+    minor: str | None = None
+    gpa: str | None = None
+    graduation_date: str | None = None
+    coursework: list[str] = []
+
+    # Project-specific fields
+    name: str | None = None
+    date: str | None = None
+    technologies: list[str] = []
+
+    # Skills-specific fields
+    category: str | None = None
+    skills: list[str] = []
+
+    # Resume content
+    bullets: list[str] = []
+
+
+class ResumeSection(BaseModel):
+    section_type: str
     title: str
-    organization: str | None
-    include: bool
-    relevance_reason: str
-    bullets: list[TailoredBullet]
+    items: list[ResumeSectionItem]
 
 
-class TailoredResumeContent(BaseModel):
-    experiences: list[TailoredExperience]
+class TailoredResumeDocument(BaseModel):
+    section_order: list[str]
+    sections: list[ResumeSection]
     skills_to_emphasize: list[str]
