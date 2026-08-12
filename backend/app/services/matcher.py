@@ -280,6 +280,57 @@ def normalize_text(text: str) -> set[str]:
         if word not in stop_words and len(word) > 1
     }
 
+def calculate_match_score(
+    matched_keywords: list[str],
+    job_keywords: set[str],
+    matched_skills: list[str],
+    related_skill_matches: list[dict[str, str]],
+    job_skills: set[str],
+) -> float:
+    keyword_coverage = (
+        len(matched_keywords) / len(job_keywords)
+        if job_keywords
+        else 0.0
+    )
+
+    exact_skill_coverage = (
+        len(matched_skills) / len(job_skills)
+        if job_skills
+        else 0.0
+    )
+
+    related_skill_coverage = (
+        len(related_skill_matches) / len(job_skills)
+        if job_skills
+        else 0.0
+    )
+
+    skill_coverage = min(
+        1.0,
+        exact_skill_coverage
+        + (related_skill_coverage * 0.5),
+    )
+
+    evidence_count = (
+        len(matched_keywords)
+        + len(matched_skills)
+        + len(related_skill_matches)
+    )
+
+    confidence_factor = min(
+        1.0,
+        evidence_count / 4,
+    )
+
+    raw_score = (
+        (keyword_coverage * 0.35)
+        + (skill_coverage * 0.65)
+    )
+
+    final_score = raw_score * confidence_factor
+
+    return round(final_score * 100, 2)
+
 def calculate_bullet_match(
     bullet,
     job: JobPosting,
@@ -303,37 +354,12 @@ def calculate_bullet_match(
         bullet_skills,
     )
 
-    keyword_score = (
-        len(matched_keywords) / len(job_keywords) * 100
-        if job_keywords
-        else 0.0
-    )
-
-    exact_skill_coverage = (
-        len(matched_skills) / len(job_skills)
-        if job_skills
-        else 0.0
-    )
-
-    related_skill_coverage = (
-        len(related_skill_matches) / len(job_skills)
-        if job_skills
-        else 0.0
-    )
-
-    skill_score = min(
-        100.0,
-        (
-            exact_skill_coverage
-            + (related_skill_coverage * 0.5)
-        )
-        * 100,
-    )
-
-    match_score = round(
-        (keyword_score * 0.4)
-        + (skill_score * 0.6),
-        2,
+    match_score = calculate_match_score(
+        matched_keywords=matched_keywords,
+        job_keywords=job_keywords,
+        matched_skills=matched_skills,
+        related_skill_matches=related_skill_matches,
+        job_skills=job_skills,
     )
 
     return {
@@ -394,38 +420,14 @@ def calculate_experience_match(
         reverse=True,
     )
 
-    keyword_score = (
-        len(matched_keywords) / len(job_keywords) * 100
-        if job_keywords
-        else 0.0
+    match_score = calculate_match_score(
+        matched_keywords=matched_keywords,
+        job_keywords=job_keywords,
+        matched_skills=matched_skills,
+        related_skill_matches=related_skill_matches,
+        job_skills=job_skills,
     )
 
-    exact_skill_coverage = (
-        len(matched_skills) / len(job_skills)
-        if job_skills
-        else 0.0
-    )
-
-    related_skill_coverage = (
-        len(related_skill_matches) / len(job_skills)
-        if job_skills
-        else 0.0
-    )
-
-    skill_score = min(
-        100.0,
-        (
-            exact_skill_coverage
-            + (related_skill_coverage * 0.5)
-        )
-        * 100,
-    )
-
-    match_score = round(
-        (keyword_score * 0.4)
-        + (skill_score * 0.6),
-        2,
-    )
 
     return {
         "experience_id": experience.id,
