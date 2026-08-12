@@ -445,6 +445,18 @@ async function handleDeleteApplication(applicationId: number) {
   }
 }
 
+function handleCancelApplicationEdit() {
+  setEditingApplicationId(null);
+
+  setApplicationFormData({
+    job_id: "",
+    status: "Interested",
+    applied_date: "",
+    deadline: "",
+    notes: "",
+  });
+}
+
 return (
   <main className="p-8">
     <h1 className="text-3xl font-bold">Naomatch</h1>
@@ -1008,12 +1020,26 @@ return (
         className="block w-full rounded border p-2"
       />
 
-      <button
-        type="submit"
-        className="rounded bg-black px-4 py-2 text-white"
-      >
-        Track Application
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          className="rounded bg-black px-4 py-2 text-white"
+        >
+          {editingApplicationId === null
+            ? "Track Application"
+            : "Save Changes"}
+        </button>
+
+        {editingApplicationId !== null && (
+          <button
+            type="button"
+            onClick={handleCancelApplicationEdit}
+            className="rounded border px-4 py-2"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
 
     <div className="mt-8">
