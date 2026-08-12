@@ -386,7 +386,7 @@ async function handleDeleteJob(jobId: number) {
       currentJobs.filter((job) => job.id !== jobId)
     );
     setJobDeleteMessage("Job posting deleted successfully.");
-    
+
     setTimeout(() => {
       setJobDeleteMessage("");
     }, 5000);
@@ -429,10 +429,15 @@ async function handleCreateApplication(event: React.FormEvent) {
   setApplicationFormMessage("");
   setApplicationDeleteMessage("");
 
- if (!applicationFormData.job_id) {
+if (!applicationFormData.job_id) {
   setApplicationFormMessage(
     "Please select a job before tracking an application."
   );
+
+  setTimeout(() => {
+    setApplicationFormMessage("");
+  }, 5000);
+
   return;
 }
 
@@ -484,6 +489,10 @@ async function handleCreateApplication(event: React.FormEvent) {
         "Unable to track application."
       );
     }
+
+    setTimeout(() => {
+      setApplicationFormMessage("");
+    }, 5000);
   }
 }
 
@@ -1354,11 +1363,24 @@ return (
               const job = getJobForApplication(application.job_id);
 
               return (
-                <p className="mt-2 text-sm">
-                  {job
-                    ? `${job.company} — ${job.title}`
-                    : `Job ID: ${application.job_id}`}
-                </p>
+                <div className="mt-2">
+                  <p className="text-sm">
+                    {job
+                      ? `${job.company} — ${job.title}`
+                      : `Job ID: ${application.job_id}`}
+                  </p>
+
+                  {job?.job_url && (
+                    <a
+                      href={job.job_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm underline"
+                    >
+                      View Job Posting
+                    </a>
+                  )}
+                </div>
               );
             })()}
             <button
