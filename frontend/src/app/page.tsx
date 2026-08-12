@@ -56,6 +56,9 @@ const [editingApplicationId, setEditingApplicationId] =
 const [applicationDeleteMessage, setApplicationDeleteMessage] =
   useState("");
 
+const [applicationStatusFilter, setApplicationStatusFilter] =
+  useState("All");
+
 const [bullets, setBullets] = useState<string[]>([""]);
 const [loading, setLoading] = useState(true);
 const [error, setError] = useState("");
@@ -533,6 +536,14 @@ const sortedApplications = [...applications].sort(
     (applicationStatusOrder[a.status] ?? 99) -
     (applicationStatusOrder[b.status] ?? 99)
 );
+
+const filteredApplications =
+  applicationStatusFilter === "All"
+    ? sortedApplications
+    : sortedApplications.filter(
+        (application: any) =>
+          application.status === applicationStatusFilter
+      );
 
 const applicationCounts = {
   total: applications.length,
@@ -1209,6 +1220,20 @@ return (
         <span>Withdrawn: {applicationCounts.withdrawn}</span>
       </div>
 
+      <select
+        value={applicationStatusFilter}
+        onChange={(e) => setApplicationStatusFilter(e.target.value)}
+        className="mt-3 rounded border p-2"
+      >
+        <option value="All">All Statuses</option>
+        <option value="Interested">Interested</option>
+        <option value="Applied">Applied</option>
+        <option value="Interview">Interview</option>
+        <option value="Offer">Offer</option>
+        <option value="Rejected">Rejected</option>
+        <option value="Withdrawn">Withdrawn</option>
+      </select>
+
       {applicationDeleteMessage && (
         <p className="mt-2 text-sm">
           {applicationDeleteMessage}
@@ -1220,7 +1245,7 @@ return (
           No applications tracked yet.
         </p>
       ) : (
-        sortedApplications.map((application: any) => (
+        filteredApplications.map((application: any) => (
           <div
             key={application.id}
             className="mt-4 rounded border p-4"
