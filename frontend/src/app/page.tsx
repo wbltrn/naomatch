@@ -63,6 +63,9 @@ const [applicationSearch, setApplicationSearch] = useState("");
 const [applicationSort, setApplicationSort] =
   useState("status");
 
+const [deadlineFilter, setDeadlineFilter] =
+  useState("all");
+
 const [bullets, setBullets] = useState<string[]>([""]);
 const [loading, setLoading] = useState(true);
 const [error, setError] = useState("");
@@ -681,7 +684,43 @@ const filteredApplications = sortedApplications.filter(
       job?.company?.toLowerCase().includes(searchText) ||
       job?.title?.toLowerCase().includes(searchText);
 
-    return matchesStatus && matchesSearch;
+    let matchesDeadline = true;
+
+    if (deadlineFilter !== "all") {
+      if (!application.deadline) {
+        matchesDeadline = false;
+      } else {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const deadlineDate = new Date(
+          `${application.deadline}T00:00:00`
+        );
+
+        const differenceInMilliseconds =
+          deadlineDate.getTime() - today.getTime();
+
+        const daysRemaining = Math.ceil(
+          differenceInMilliseconds /
+            (1000 * 60 * 60 * 24)
+        );
+
+        if (deadlineFilter === "due-soon") {
+          matchesDeadline =
+            daysRemaining >= 0 && daysRemaining <= 7;
+        }
+
+        if (deadlineFilter === "past-due") {
+          matchesDeadline = daysRemaining < 0;
+        }
+      }
+    }
+
+    return (
+      matchesStatus &&
+      matchesSearch &&
+      matchesDeadline
+    );
   }
 );
 
@@ -1394,6 +1433,16 @@ return (
         <option value="deadline-soonest">Deadline: Soonest</option>
         <option value="deadline-latest">Deadline: Latest</option>
         <option value="recently-applied">Recently Applied</option>
+      </select>
+
+      <select
+        value={deadlineFilter}
+        onChange={(e) => setDeadlineFilter(e.target.value)}
+        className="mt-3 rounded border p-2"
+      >
+        <option value="all">All Deadlines</option>
+        <option value="due-soon">Due Within 7 Days</option>
+        <option value="past-due">Past Due</option>
       </select>
 
       <input
