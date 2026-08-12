@@ -165,3 +165,13 @@ export async function deleteJob(jobId: number) {
 
   return response.json();
 }
+
+export async function getApplications() {
+  const response = await fetch("http://127.0.0.1:8000/applications/");
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch applications");
+  }
+
+  return response.json();
+}

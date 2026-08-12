@@ -7,6 +7,7 @@ import {
   createJob,
   deleteExperience,
   deleteJob,
+  getApplications,
   getExperiences,
   getJobs,
   updateExperience,
@@ -48,6 +49,7 @@ const [jobs, setJobs] = useState<any[]>([]);
 const [editingJobId, setEditingJobId] = useState<number | null>(null);
 const [jobFormMessage, setJobFormMessage] = useState("");
 const [jobDeleteMessage, setJobDeleteMessage] = useState("");
+const [applications, setApplications] = useState<any[]>([]);
 
 useEffect(() => {
  async function loadExperiences() {
@@ -71,8 +73,18 @@ async function loadJobs() {
   }
 }
 
+async function loadApplications() {
+  try {
+    const data = await getApplications();
+    setApplications(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
   loadExperiences();
   loadJobs();
+  loadApplications();
   }, []);
 
   async function handleCheckBackend() {
@@ -706,6 +718,47 @@ function handleCancelJobEdit() {
           ))
         )}
       </div>
+    </div>
+
+    <div className="mt-8">
+      <h2 className="text-2xl font-semibold">Applications</h2>
+
+      {applications.length === 0 ? (
+        <p className="mt-4">No applications tracked yet.</p>
+      ) : (
+        applications.map((application: any) => (
+          <div
+            key={application.id}
+            className="mt-4 rounded border p-4"
+          >
+            <p>
+              <strong>Status:</strong> {application.status}
+            </p>
+
+            {application.applied_date && (
+              <p>
+                <strong>Applied:</strong> {application.applied_date}
+              </p>
+            )}
+
+            {application.deadline && (
+              <p>
+                <strong>Deadline:</strong> {application.deadline}
+              </p>
+            )}
+
+            {application.notes && (
+              <p className="mt-2">
+                <strong>Notes:</strong> {application.notes}
+              </p>
+            )}
+
+            <p className="mt-2 text-sm">
+              Job ID: {application.job_id}
+            </p>
+          </div>
+        ))
+      )}
     </div>
   </main>
 );
