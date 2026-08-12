@@ -592,6 +592,21 @@ function getDeadlineMessage(deadline: string | null) {
   return null;
 }
 
+function formatApplicationDate(date: string | null) {
+  if (!date) {
+    return "";
+  }
+
+  return new Date(`${date}T00:00:00`).toLocaleDateString(
+    "en-US",
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }
+  );
+}
+
 return (
   <main className="p-8">
     <h1 className="text-3xl font-bold">Naomatch</h1>
@@ -1224,7 +1239,7 @@ return (
             {application.applied_date && (
               <p>
                 <strong>Applied:</strong>{" "}
-                {application.applied_date}
+                {formatApplicationDate(application.applied_date)}
               </p>
             )}
 
@@ -1232,7 +1247,7 @@ return (
             <div>
               <p>
                 <strong>Deadline:</strong>{" "}
-                {application.deadline}
+                {formatApplicationDate(application.deadline)}
               </p>
 
               {getDeadlineMessage(application.deadline) && (
