@@ -500,6 +500,25 @@ const availableJobsForApplication = jobs.filter((job: any) => {
   );
 });
 
+function getApplicationStatusClasses(status: string) {
+  switch (status) {
+    case "Interested":
+      return "bg-gray-100 text-gray-800";
+    case "Applied":
+      return "bg-blue-100 text-blue-800";
+    case "Interview":
+      return "bg-yellow-100 text-yellow-800";
+    case "Offer":
+      return "bg-green-100 text-green-800";
+    case "Rejected":
+      return "bg-red-100 text-red-800";
+    case "Withdrawn":
+      return "bg-purple-100 text-purple-800";
+    default:
+      return "bg-gray-100 text-gray-800";
+  }
+}
+
 return (
   <main className="p-8">
     <h1 className="text-3xl font-bold">Naomatch</h1>
@@ -1108,10 +1127,16 @@ return (
             key={application.id}
             className="mt-4 rounded border p-4"
           >
-            <p>
-              <strong>Status:</strong>{" "}
+           <p>
+            <strong>Status:</strong>{" "}
+            <span
+              className={`rounded px-2 py-1 text-sm font-medium ${getApplicationStatusClasses(
+                application.status
+              )}`}
+            >
               {application.status}
-            </p>
+            </span>
+          </p>
 
             {application.applied_date && (
               <p>
