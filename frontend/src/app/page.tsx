@@ -436,13 +436,21 @@ async function handleCreateApplication(event: React.FormEvent) {
     setApplicationFormMessage("");
   } catch (error) {
     console.error(error);
+
+    if (error instanceof Error) {
+      setApplicationFormMessage(error.message);
+    } else {
+      setApplicationFormMessage(
+        "Unable to track application."
+      );
+    }
   }
 }
 
 async function handleDeleteApplication(applicationId: number) {
   setApplicationFormMessage("");
   setApplicationDeleteMessage("");
-  
+
   const confirmed = window.confirm(
     "Are you sure you want to delete this application?"
   );

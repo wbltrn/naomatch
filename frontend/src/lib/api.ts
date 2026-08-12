@@ -191,9 +191,13 @@ export async function createApplication(application: {
     body: JSON.stringify(application),
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to create application");
-  }
+ if (!response.ok) {
+  const errorData = await response.json();
+
+  throw new Error(
+    errorData.detail || "Failed to create application"
+  );
+}
 
   return response.json();
 }
