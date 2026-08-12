@@ -534,6 +534,25 @@ const sortedApplications = [...applications].sort(
     (applicationStatusOrder[b.status] ?? 99)
 );
 
+const applicationCounts = {
+  total: applications.length,
+  interested: applications.filter(
+    (application: any) => application.status === "Interested"
+  ).length,
+  applied: applications.filter(
+    (application: any) => application.status === "Applied"
+  ).length,
+  interview: applications.filter(
+    (application: any) => application.status === "Interview"
+  ).length,
+  offer: applications.filter(
+    (application: any) => application.status === "Offer"
+  ).length,
+  rejected: applications.filter(
+    (application: any) => application.status === "Rejected"
+  ).length,
+};
+
 return (
   <main className="p-8">
     <h1 className="text-3xl font-bold">Naomatch</h1>
@@ -1125,6 +1144,15 @@ return (
       <h2 className="text-2xl font-semibold">
         Applications
       </h2>
+
+      <div className="mt-3 flex flex-wrap gap-3 text-sm">
+        <span>Total: {applicationCounts.total}</span>
+        <span>Interested: {applicationCounts.interested}</span>
+        <span>Applied: {applicationCounts.applied}</span>
+        <span>Interviews: {applicationCounts.interview}</span>
+        <span>Offers: {applicationCounts.offer}</span>
+        <span>Rejected: {applicationCounts.rejected}</span>
+      </div>
 
       {applicationDeleteMessage && (
         <p className="mt-2 text-sm">
