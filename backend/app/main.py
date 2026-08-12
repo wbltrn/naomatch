@@ -13,6 +13,8 @@ from app.routers.matches import router as matches_router
 
 from app.models.semantic_match_cache import SemanticMatchCache
 
+from app.routers.resume_tailor import router as resume_tailor_router
+
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
@@ -33,6 +35,7 @@ app.include_router(experiences_router)
 app.include_router(jobs_router)
 app.include_router(applications_router)
 app.include_router(matches_router)
+app.include_router(resume_tailor_router)
 
 @app.get("/")
 def root():

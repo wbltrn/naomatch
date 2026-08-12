@@ -2,6 +2,7 @@ import os
 
 from dotenv import load_dotenv
 from google import genai
+from google.genai import errors
 
 from app.schemas.resume import TailoredResumeContent
 
@@ -13,6 +14,8 @@ client = genai.Client(
     api_key=os.getenv("GEMINI_API_KEY")
 )
 
+class ResumeTailoringUnavailableError(Exception):
+    pass
 
 def tailor_resume_content(
     job_title: str,
@@ -71,14 +74,20 @@ STRICT RULES:
 Return structured resume-tailoring data following the provided schema.
 """
 
-    response = client.models.generate_content(
-        model="gemini-3.6-flash",
-        contents=prompt,
-        config={
-            "response_mime_type": "application/json",
-            "response_schema": TailoredResumeContent,
-        },
-    )
+    try:
+        response = client.models.generate_content(
+            model="gemini-3.6-flash",
+            contents=prompt,
+            config={
+                "response_mime_type": "application/json",
+                "response_schema": TailoredResumeContent,
+            },
+        )
+
+    except errors.ClientError as error:
+        raise ResumeTailoringUnavailableError(
+            "Resume tailoring is temporarily unavailable because the AI service quota was reached."
+        ) from error
 
     return TailoredResumeContent.model_validate_json(
         response.text
