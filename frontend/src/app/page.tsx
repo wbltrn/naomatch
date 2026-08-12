@@ -58,6 +58,7 @@ const [applicationDeleteMessage, setApplicationDeleteMessage] =
 
 const [applicationStatusFilter, setApplicationStatusFilter] =
   useState("All");
+const [applicationSearch, setApplicationSearch] = useState("");
 
 const [bullets, setBullets] = useState<string[]>([""]);
 const [loading, setLoading] = useState(true);
@@ -537,13 +538,24 @@ const sortedApplications = [...applications].sort(
     (applicationStatusOrder[b.status] ?? 99)
 );
 
-const filteredApplications =
-  applicationStatusFilter === "All"
-    ? sortedApplications
-    : sortedApplications.filter(
-        (application: any) =>
-          application.status === applicationStatusFilter
-      );
+const filteredApplications = sortedApplications.filter(
+  (application: any) => {
+    const matchesStatus =
+      applicationStatusFilter === "All" ||
+      application.status === applicationStatusFilter;
+
+    const job = getJobForApplication(application.job_id);
+
+    const searchText = applicationSearch.toLowerCase();
+
+    const matchesSearch =
+      !searchText ||
+      job?.company?.toLowerCase().includes(searchText) ||
+      job?.title?.toLowerCase().includes(searchText);
+
+    return matchesStatus && matchesSearch;
+  }
+);
 
 const applicationCounts = {
   total: applications.length,
@@ -1233,6 +1245,14 @@ return (
         <option value="Rejected">Rejected</option>
         <option value="Withdrawn">Withdrawn</option>
       </select>
+
+      <input
+        type="text"
+        placeholder="Search by company or job title"
+        value={applicationSearch}
+        onChange={(e) => setApplicationSearch(e.target.value)}
+        className="mt-3 block w-full rounded border p-2"
+      />
 
       {applicationDeleteMessage && (
         <p className="mt-2 text-sm">
