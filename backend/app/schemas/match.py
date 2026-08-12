@@ -14,6 +14,7 @@ class BulletMatchResponse(BaseModel):
     bullet_id: int
     bullet_text: str
     match_score: float
+    semantic_boost: float
     matched_keywords: list[str]
     matched_skills: list[str]
     related_skill_matches: list[dict[str, str]]

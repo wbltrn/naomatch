@@ -332,9 +332,39 @@ def calculate_match_score(
 
     return round(final_score * 100, 2)
 
+def calculate_bullet_semantic_boost(
+    bullet_text: str,
+    semantic_match,
+) -> float:
+    bullet_keywords = normalize_text(bullet_text)
+
+    semantic_evidence = " ".join(
+        semantic_match.matched_responsibilities
+        + semantic_match.strengths
+    )
+
+    semantic_keywords = normalize_text(semantic_evidence)
+
+    if not semantic_keywords:
+        return 0.0
+
+    overlap = bullet_keywords.intersection(
+        semantic_keywords
+    )
+
+    overlap_ratio = len(overlap) / len(
+        semantic_keywords
+    )
+
+    return min(
+        25.0,
+        round(overlap_ratio * 100, 2),
+    )
+
 def calculate_bullet_match(
     bullet,
     job: JobPosting,
+    semantic_match,
 ):
     job_keywords = normalize_text(job.description)
     job_skills = extract_skills(job.description)
@@ -363,10 +393,21 @@ def calculate_bullet_match(
         job_skills=job_skills,
     )
 
+    semantic_boost = calculate_bullet_semantic_boost(
+        bullet.bullet_text,
+        semantic_match,
+    )
+
+    match_score = min(
+        100.0,
+        round(match_score + semantic_boost, 2),
+    )
+
     return {
         "bullet_id": bullet.id,
         "bullet_text": bullet.bullet_text,
         "match_score": match_score,
+        "semantic_boost": semantic_boost,
         "matched_keywords": matched_keywords,
         "matched_skills": matched_skills,
         "related_skill_matches": related_skill_matches,
@@ -411,17 +452,6 @@ def calculate_experience_match(
         experience_skills,
     )
 
-    bullet_matches = [
-        calculate_bullet_match(bullet, job)
-        for bullet in experience.bullets
-    ]
-
-    bullet_matches = sorted(
-        bullet_matches,
-        key=lambda bullet_match: bullet_match["match_score"],
-        reverse=True,
-    )
-
     semantic_match = analyze_semantic_match(
         db=db,
         job_title=job.title,
@@ -433,6 +463,21 @@ def calculate_experience_match(
             bullet.bullet_text
             for bullet in experience.bullets
         ],
+    )
+
+    bullet_matches = [
+        calculate_bullet_match(
+            bullet,
+            job,
+            semantic_match,
+        )
+        for bullet in experience.bullets
+    ]
+
+    bullet_matches = sorted(
+        bullet_matches,
+        key=lambda bullet_match: bullet_match["match_score"],
+        reverse=True,
     )
 
     match_score = calculate_match_score(
