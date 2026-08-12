@@ -13,6 +13,8 @@ import {
   getJobs,
   updateExperience,
   updateJob,
+  deleteApplication,
+  updateApplication,
 } from "@/lib/api";
 
 export default function Home() {
@@ -47,6 +49,9 @@ const [applicationFormData, setApplicationFormData] = useState({
 const [editingExperienceId, setEditingExperienceId] = useState<number | null>(
   null
 );
+
+const [editingApplicationId, setEditingApplicationId] =
+  useState<number | null>(null);
 
 const [bullets, setBullets] = useState<string[]>([""]);
 const [loading, setLoading] = useState(true);
@@ -357,6 +362,18 @@ function handleCancelJobEdit() {
   });
 }
 
+function handleEditApplication(application: any) {
+  setEditingApplicationId(application.id);
+
+  setApplicationFormData({
+    job_id: String(application.job_id),
+    status: application.status ?? "Interested",
+    applied_date: application.applied_date ?? "",
+    deadline: application.deadline ?? "",
+    notes: application.notes ?? "",
+  });
+}
+
 async function handleCreateApplication(event: React.FormEvent) {
   event.preventDefault();
 
@@ -365,18 +382,33 @@ async function handleCreateApplication(event: React.FormEvent) {
   }
 
   try {
-    const newApplication = await createApplication({
-      job_id: Number(applicationFormData.job_id),
+   const applicationPayload = {
       status: applicationFormData.status,
       applied_date: applicationFormData.applied_date || null,
       deadline: applicationFormData.deadline || null,
       notes: applicationFormData.notes.trim() || null,
-    });
+    };
 
-    setApplications((currentApplications: any[]) => [
-      ...currentApplications,
-      newApplication,
-    ]);
+    const savedApplication =
+      editingApplicationId === null
+        ? await createApplication({
+            job_id: Number(applicationFormData.job_id),
+            ...applicationPayload,
+          })
+        : await updateApplication(
+            editingApplicationId,
+            applicationPayload
+          );
+
+    setApplications((currentApplications: any[]) =>
+      editingApplicationId === null
+        ? [...currentApplications, savedApplication]
+        : currentApplications.map((application) =>
+            application.id === editingApplicationId
+              ? savedApplication
+              : application
+          )
+    );
 
     setApplicationFormData({
       job_id: "",
@@ -385,6 +417,29 @@ async function handleCreateApplication(event: React.FormEvent) {
       deadline: "",
       notes: "",
     });
+    setEditingApplicationId(null);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+async function handleDeleteApplication(applicationId: number) {
+  const confirmed = window.confirm(
+    "Are you sure you want to delete this application?"
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await deleteApplication(applicationId);
+
+    setApplications((currentApplications: any[]) =>
+      currentApplications.filter(
+        (application) => application.id !== applicationId
+      )
+    );
   } catch (error) {
     console.error(error);
   }
@@ -1005,6 +1060,20 @@ return (
             <p className="mt-2 text-sm">
               Job ID: {application.job_id}
             </p>
+
+            <button
+              onClick={() => handleEditApplication(application)}
+              className="mt-3 mr-2 rounded border px-3 py-1"
+            >
+              Edit
+            </button>
+
+            <button
+              onClick={() => handleDeleteApplication(application.id)}
+              className="mt-3 rounded border px-3 py-1"
+            >
+              Delete
+            </button>
           </div>
         ))
       )}

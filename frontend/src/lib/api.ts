@@ -197,3 +197,45 @@ export async function createApplication(application: {
 
   return response.json();
 }
+
+export async function updateApplication(
+  applicationId: number,
+  application: {
+    status: string;
+    applied_date?: string | null;
+    deadline?: string | null;
+    notes?: string | null;
+  }
+) {
+  const response = await fetch(
+    `http://127.0.0.1:8000/applications/${applicationId}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(application),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to update application");
+  }
+
+  return response.json();
+}
+
+export async function deleteApplication(applicationId: number) {
+  const response = await fetch(
+    `http://127.0.0.1:8000/applications/${applicationId}`,
+    {
+      method: "DELETE",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to delete application");
+  }
+
+  return response.json();
+}
