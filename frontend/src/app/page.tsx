@@ -1443,42 +1443,74 @@ return (
         Applications
       </h2>
 
-    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-      <div className="rounded border p-4">
-        <p className="text-sm">Total Applications</p>
-        <p className="mt-1 text-2xl font-bold">
-          {applicationCounts.total}
-        </p>
-      </div>
+   <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    <button
+      type="button"
+      onClick={handleClearApplicationFilters}
+      className="rounded border p-4 text-left"
+    >
+      <p className="text-sm">Total Applications</p>
+      <p className="mt-1 text-2xl font-bold">
+        {applicationCounts.total}
+      </p>
+    </button>
 
-      <div className="rounded border p-4">
-        <p className="text-sm">Applied</p>
-        <p className="mt-1 text-2xl font-bold">
-          {applicationCounts.applied}
-        </p>
-      </div>
+    <button
+      type="button"
+      onClick={() => {
+        setApplicationStatusFilter("Applied");
+        setDeadlineFilter("all");
+      }}
+      className="rounded border p-4 text-left"
+    >
+      <p className="text-sm">Applied</p>
+      <p className="mt-1 text-2xl font-bold">
+        {applicationCounts.applied}
+      </p>
+    </button>
 
-      <div className="rounded border p-4">
-        <p className="text-sm">Interviews</p>
-        <p className="mt-1 text-2xl font-bold">
-          {applicationCounts.interview}
-        </p>
-      </div>
+    <button
+      type="button"
+      onClick={() => {
+        setApplicationStatusFilter("Interview");
+        setDeadlineFilter("all");
+      }}
+      className="rounded border p-4 text-left"
+    >
+      <p className="text-sm">Interviews</p>
+      <p className="mt-1 text-2xl font-bold">
+        {applicationCounts.interview}
+      </p>
+    </button>
 
-      <div className="rounded border p-4">
-        <p className="text-sm">Offers</p>
-        <p className="mt-1 text-2xl font-bold">
-          {applicationCounts.offer}
-        </p>
-      </div>
+    <button
+      type="button"
+      onClick={() => {
+        setApplicationStatusFilter("Offer");
+        setDeadlineFilter("all");
+      }}
+      className="rounded border p-4 text-left"
+    >
+      <p className="text-sm">Offers</p>
+      <p className="mt-1 text-2xl font-bold">
+        {applicationCounts.offer}
+      </p>
+    </button>
 
-      <div className="rounded border p-4">
-        <p className="text-sm">Overdue</p>
-        <p className="mt-1 text-2xl font-bold">
-          {applicationCounts.overdue}
-        </p>
-      </div>
-    </div>
+    <button
+      type="button"
+      onClick={() => {
+        setApplicationStatusFilter("All");
+        setDeadlineFilter("past-due");
+      }}
+      className="rounded border p-4 text-left"
+    >
+      <p className="text-sm">Overdue</p>
+      <p className="mt-1 text-2xl font-bold">
+        {applicationCounts.overdue}
+      </p>
+    </button>
+  </div>
 
       <select
         value={applicationStatusFilter}
