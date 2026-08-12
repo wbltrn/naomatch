@@ -686,10 +686,12 @@ const filteredApplications = sortedApplications.filter(
 
     let matchesDeadline = true;
 
-    if (deadlineFilter !== "all") {
-      if (!application.deadline) {
-        matchesDeadline = false;
-      } else {
+  if (deadlineFilter === "no-deadline") {
+    matchesDeadline = !application.deadline;
+  } else if (deadlineFilter !== "all") {
+    if (!application.deadline) {
+      matchesDeadline = false;
+    } else {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -1488,6 +1490,7 @@ return (
         <option value="due-soon">Due Within 7 Days</option>
         <option value="due-30">Due Within 30 Days</option>
         <option value="past-due">Past Due</option>
+        <option value="no-deadline">No Deadline</option>
       </select>
 
       <input
