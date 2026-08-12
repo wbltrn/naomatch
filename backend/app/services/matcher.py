@@ -280,6 +280,71 @@ def normalize_text(text: str) -> set[str]:
         if word not in stop_words and len(word) > 1
     }
 
+def calculate_bullet_match(
+    bullet,
+    job: JobPosting,
+):
+    job_keywords = normalize_text(job.description)
+    job_skills = extract_skills(job.description)
+
+    bullet_keywords = normalize_text(bullet.bullet_text)
+    bullet_skills = extract_skills(bullet.bullet_text)
+
+    matched_keywords = sorted(
+        job_keywords.intersection(bullet_keywords)
+    )
+
+    matched_skills = sorted(
+        job_skills.intersection(bullet_skills)
+    )
+
+    related_skill_matches = find_related_skill_matches(
+        job_skills,
+        bullet_skills,
+    )
+
+    keyword_score = (
+        len(matched_keywords) / len(job_keywords) * 100
+        if job_keywords
+        else 0.0
+    )
+
+    exact_skill_coverage = (
+        len(matched_skills) / len(job_skills)
+        if job_skills
+        else 0.0
+    )
+
+    related_skill_coverage = (
+        len(related_skill_matches) / len(job_skills)
+        if job_skills
+        else 0.0
+    )
+
+    skill_score = min(
+        100.0,
+        (
+            exact_skill_coverage
+            + (related_skill_coverage * 0.5)
+        )
+        * 100,
+    )
+
+    match_score = round(
+        (keyword_score * 0.4)
+        + (skill_score * 0.6),
+        2,
+    )
+
+    return {
+        "bullet_id": bullet.id,
+        "bullet_text": bullet.bullet_text,
+        "match_score": match_score,
+        "matched_keywords": matched_keywords,
+        "matched_skills": matched_skills,
+        "related_skill_matches": related_skill_matches,
+    }
+
 def calculate_experience_match(
     experience: Experience,
     job: JobPosting,
@@ -316,6 +381,17 @@ def calculate_experience_match(
     related_skill_matches = find_related_skill_matches(
         job_skills,
         experience_skills,
+    )
+
+    bullet_matches = [
+        calculate_bullet_match(bullet, job)
+        for bullet in experience.bullets
+    ]
+
+    bullet_matches = sorted(
+        bullet_matches,
+        key=lambda bullet_match: bullet_match["match_score"],
+        reverse=True,
     )
 
     keyword_score = (
@@ -359,4 +435,5 @@ def calculate_experience_match(
         "matched_keywords": matched_keywords,
         "matched_skills": matched_skills,
         "related_skill_matches": related_skill_matches,
+        "bullet_matches": bullet_matches,
     }
