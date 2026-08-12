@@ -53,6 +53,9 @@ const [editingExperienceId, setEditingExperienceId] = useState<number | null>(
 const [editingApplicationId, setEditingApplicationId] =
   useState<number | null>(null);
 
+const [applicationDeleteMessage, setApplicationDeleteMessage] =
+  useState("");
+
 const [bullets, setBullets] = useState<string[]>([""]);
 const [loading, setLoading] = useState(true);
 const [error, setError] = useState("");
@@ -92,8 +95,14 @@ async function loadApplications() {
   try {
     const data = await getApplications();
     setApplications(data);
+    setApplicationDeleteMessage(
+    "Application deleted successfully."
+);
   } catch (error) {
-    console.error(error);
+  console.error(error);
+    setApplicationDeleteMessage(
+      "Unable to delete application."
+    );
   }
 }
 
@@ -1061,6 +1070,12 @@ return (
       <h2 className="text-2xl font-semibold">
         Applications
       </h2>
+
+      {applicationDeleteMessage && (
+        <p className="mt-2 text-sm">
+          {applicationDeleteMessage}
+        </p>
+      )}
 
       {applications.length === 0 ? (
         <p className="mt-4">
