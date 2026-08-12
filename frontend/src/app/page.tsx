@@ -305,6 +305,18 @@ async function handleDeleteJob(jobId: number) {
   }
 }
 
+function handleCancelJobEdit() {
+  setEditingJobId(null);
+
+  setJobFormData({
+    company: "",
+    title: "",
+    location: "",
+    job_url: "",
+    description: "",
+  });
+}
+
  return (
   <main className="p-8">
     <h1 className="text-3xl font-bold">Naomatch</h1>
@@ -591,12 +603,24 @@ async function handleDeleteJob(jobId: number) {
           className="block w-full rounded border p-2"
         />
 
-        <button
-          type="submit"
-          className="rounded bg-black px-4 py-2 text-white"
-        >
-          Add Job
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            className="rounded bg-black px-4 py-2 text-white"
+          >
+            {editingJobId === null ? "Add Job" : "Save Changes"}
+          </button>
+
+          {editingJobId !== null && (
+            <button
+              type="button"
+              onClick={handleCancelJobEdit}
+              className="rounded border px-4 py-2"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
 
       <div className="mt-8">
