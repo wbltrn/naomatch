@@ -386,6 +386,8 @@ function handleEditApplication(application: any) {
 
 async function handleCreateApplication(event: React.FormEvent) {
   event.preventDefault();
+  setApplicationFormMessage("");
+  setApplicationDeleteMessage("");
 
  if (!applicationFormData.job_id) {
   setApplicationFormMessage(
@@ -438,6 +440,9 @@ async function handleCreateApplication(event: React.FormEvent) {
 }
 
 async function handleDeleteApplication(applicationId: number) {
+  setApplicationFormMessage("");
+  setApplicationDeleteMessage("");
+  
   const confirmed = window.confirm(
     "Are you sure you want to delete this application?"
   );
