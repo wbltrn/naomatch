@@ -252,6 +252,7 @@ function handleEditJob(job: any) {
 async function handleCreateJob(event: React.FormEvent) {
   event.preventDefault();
   setJobFormMessage("");
+  setJobDeleteMessage("");
 
   if (
     !jobFormData.company.trim() ||
@@ -294,6 +295,9 @@ async function handleCreateJob(event: React.FormEvent) {
 }
 
 async function handleDeleteJob(jobId: number) {
+  setJobFormMessage("");
+  setJobDeleteMessage("");
+
   const confirmed = window.confirm(
     "Are you sure you want to delete this job posting?"
   );
