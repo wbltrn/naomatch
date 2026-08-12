@@ -489,6 +489,17 @@ function getJobForApplication(jobId: number) {
   return jobs.find((job: any) => job.id === jobId);
 }
 
+const availableJobsForApplication = jobs.filter((job: any) => {
+  const existingApplication = applications.find(
+    (application: any) => application.job_id === job.id
+  );
+
+  return (
+    !existingApplication ||
+    existingApplication.id === editingApplicationId
+  );
+});
+
 return (
   <main className="p-8">
     <h1 className="text-3xl font-bold">Naomatch</h1>
@@ -964,14 +975,11 @@ return (
           Select a job
         </option>
 
-        {jobs.map((job: any) => (
-          <option
-            key={job.id}
-            value={job.id}
-          >
-            {job.company} — {job.title}
-          </option>
-        ))}
+     {availableJobsForApplication.map((job: any) => (
+        <option key={job.id} value={job.id}>
+          {job.company} — {job.title}
+        </option>
+      ))}
       </select>
 
       <select
