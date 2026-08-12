@@ -764,6 +764,11 @@ function handleClearApplicationFilters() {
   setApplicationSort("status");
 }
 
+const hasActiveApplicationFilters =
+  applicationStatusFilter !== "All" ||
+  applicationSearch.trim() !== "" ||
+  applicationSort !== "status";
+
 return (
   <main className="p-8">
     <h1 className="text-3xl font-bold">Naomatch</h1>
@@ -1406,6 +1411,12 @@ return (
       >
         Clear Filters
       </button>
+
+      {hasActiveApplicationFilters && (
+        <p className="mt-2 text-sm">
+          Filters are active.
+        </p>
+      )}
 
       {applicationDeleteMessage && (
         <p className="mt-2 text-sm">
