@@ -7,6 +7,10 @@ from google import genai
 
 from app.schemas.match import SemanticMatchResponse
 
+from sqlalchemy.orm import Session
+
+from app.models.semantic_match_cache import SemanticMatchCache
+
 
 load_dotenv()
 
@@ -47,6 +51,7 @@ def build_semantic_cache_key(
 
 
 def analyze_semantic_match(
+    db: Session,
     job_title: str,
     job_description: str,
     experience_title: str,
@@ -67,6 +72,26 @@ def analyze_semantic_match(
     # this exact job + experience combination.
     if cache_key in SEMANTIC_MATCH_CACHE:
         return SEMANTIC_MATCH_CACHE[cache_key]
+
+    cached_record = (
+        db.query(SemanticMatchCache)
+        .filter(SemanticMatchCache.cache_key == cache_key)
+        .first()
+    )
+
+    if cached_record is not None:
+        semantic_match = SemanticMatchResponse(
+            semantic_score=float(cached_record.semantic_score),
+            matched_responsibilities=json.loads(
+                cached_record.matched_responsibilities
+            ),
+            strengths=json.loads(cached_record.strengths),
+            gaps=json.loads(cached_record.gaps),
+        )
+
+        SEMANTIC_MATCH_CACHE[cache_key] = semantic_match
+
+        return semantic_match
 
     prompt = f"""
 You are evaluating how relevant an engineering experience is to a target job.
@@ -112,8 +137,25 @@ Return:
             response.text
         )
 
-        # Cache Gemini's result so identical requests return
-        # the exact same semantic analysis.
+        # Only persist a real Gemini result.
+        # Failed calls are handled in the except block and are not cached.
+        cached_record = SemanticMatchCache(
+            cache_key=cache_key,
+            semantic_score=semantic_match.semantic_score,
+            matched_responsibilities=json.dumps(
+                semantic_match.matched_responsibilities
+            ),
+            strengths=json.dumps(
+                semantic_match.strengths
+            ),
+            gaps=json.dumps(
+                semantic_match.gaps
+            ),
+        )
+
+        db.add(cached_record)
+        db.commit()
+
         SEMANTIC_MATCH_CACHE[cache_key] = semantic_match
 
         return semantic_match

@@ -45,7 +45,7 @@ def match_experiences_to_job(
     experiences = db.query(Experience).all()
 
     matches = [
-        calculate_experience_match(experience, job)
+        calculate_experience_match(db, experience, job)
         for experience in experiences
     ]
 

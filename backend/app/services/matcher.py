@@ -373,6 +373,7 @@ def calculate_bullet_match(
     }
 
 def calculate_experience_match(
+    db,
     experience: Experience,
     job: JobPosting,
 ):
@@ -422,6 +423,7 @@ def calculate_experience_match(
     )
 
     semantic_match = analyze_semantic_match(
+        db=db,
         job_title=job.title,
         job_description=job.description,
         experience_title=experience.title,

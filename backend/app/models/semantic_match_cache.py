@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy import Column, Float, Integer, String, Text
 
 from app.database import Base
 
@@ -16,7 +16,7 @@ class SemanticMatchCache(Base):
     )
 
     semantic_score = Column(
-        Integer,
+        Float,
         nullable=False,
     )
 
