@@ -30,6 +30,17 @@ def create_application(
     application_data: ApplicationCreate,
     db: Session = Depends(get_db),
 ):
+    existing_application = (
+        db.query(Application)
+        .filter(Application.job_id == application_data.job_id)
+        .first()
+    )
+
+    if existing_application is not None:
+        raise HTTPException(
+            status_code=400,
+            detail="An application for this job is already being tracked",
+        )
     application = Application(
         job_id=application_data.job_id,
         status=application_data.status,
