@@ -578,9 +578,32 @@ const applicationStatusOrder: Record<string, number> = {
 };
 
 const sortedApplications = [...applications].sort(
-  (a: any, b: any) =>
-    (applicationStatusOrder[a.status] ?? 99) -
-    (applicationStatusOrder[b.status] ?? 99)
+  (a: any, b: any) => {
+    const statusDifference =
+      (applicationStatusOrder[a.status] ?? 99) -
+      (applicationStatusOrder[b.status] ?? 99);
+
+    if (statusDifference !== 0) {
+      return statusDifference;
+    }
+
+    if (!a.deadline && !b.deadline) {
+      return 0;
+    }
+
+    if (!a.deadline) {
+      return 1;
+    }
+
+    if (!b.deadline) {
+      return -1;
+    }
+
+    return (
+      new Date(`${a.deadline}T00:00:00`).getTime() -
+      new Date(`${b.deadline}T00:00:00`).getTime()
+    );
+  }
 );
 
 const filteredApplications = sortedApplications.filter(
