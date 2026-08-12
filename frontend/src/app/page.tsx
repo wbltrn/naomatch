@@ -64,6 +64,7 @@ const [editingJobId, setEditingJobId] = useState<number | null>(null);
 const [jobFormMessage, setJobFormMessage] = useState("");
 const [jobDeleteMessage, setJobDeleteMessage] = useState("");
 const [applications, setApplications] = useState<any[]>([]);
+const [applicationFormMessage, setApplicationFormMessage] = useState("");
 
 useEffect(() => {
  async function loadExperiences() {
@@ -377,9 +378,12 @@ function handleEditApplication(application: any) {
 async function handleCreateApplication(event: React.FormEvent) {
   event.preventDefault();
 
-  if (!applicationFormData.job_id) {
-    return;
-  }
+ if (!applicationFormData.job_id) {
+  setApplicationFormMessage(
+    "Please select a job before tracking an application."
+  );
+  return;
+}
 
   try {
    const applicationPayload = {
@@ -418,6 +422,7 @@ async function handleCreateApplication(event: React.FormEvent) {
       notes: "",
     });
     setEditingApplicationId(null);
+    setApplicationFormMessage("");
   } catch (error) {
     console.error(error);
   }
@@ -447,6 +452,7 @@ async function handleDeleteApplication(applicationId: number) {
 
 function handleCancelApplicationEdit() {
   setEditingApplicationId(null);
+  setApplicationFormMessage("");
 
   setApplicationFormData({
     job_id: "",
@@ -1040,6 +1046,11 @@ return (
           </button>
         )}
       </div>
+      {applicationFormMessage && (
+        <p className="text-sm">
+          {applicationFormMessage}
+        </p>
+      )}
     </form>
 
     <div className="mt-8">
