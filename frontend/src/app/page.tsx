@@ -1264,6 +1264,10 @@ return (
         <p className="mt-4">
           No applications tracked yet.
         </p>
+      ) : filteredApplications.length === 0 ? (
+        <p className="mt-4">
+          No applications match your current filters.
+        </p>
       ) : (
         filteredApplications.map((application: any) => (
           <div
