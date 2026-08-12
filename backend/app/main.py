@@ -9,6 +9,8 @@ from app.routers.jobs import router as jobs_router
 
 from app.routers.applications import router as applications_router
 
+from app.routers.matches import router as matches_router
+
 app = FastAPI()
 
 origins = [
@@ -26,6 +28,7 @@ app.add_middleware(
 app.include_router(experiences_router)
 app.include_router(jobs_router)
 app.include_router(applications_router)
+app.include_router(matches_router)
 
 @app.get("/")
 def root():
