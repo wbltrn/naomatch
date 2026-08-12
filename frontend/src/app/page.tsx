@@ -10,6 +10,7 @@ import {
   getExperiences,
   getJobs,
   updateExperience,
+  updateJob,
 } from "@/lib/api";
 
 export default function Home() {
@@ -44,6 +45,7 @@ const [formMessage, setFormMessage] = useState("");
 const [deleteMessage, setDeleteMessage] = useState("");
 const [isCurrent, setIsCurrent] = useState(false);
 const [jobs, setJobs] = useState<any[]>([]);
+const [editingJobId, setEditingJobId] = useState<number | null>(null);
 
 useEffect(() => {
  async function loadExperiences() {
@@ -233,6 +235,18 @@ function formatExperienceDate(date: string | null) {
   });
 }
 
+function handleEditJob(job: any) {
+  setEditingJobId(job.id);
+
+  setJobFormData({
+    company: job.company ?? "",
+    title: job.title ?? "",
+    location: job.location ?? "",
+    job_url: job.job_url ?? "",
+    description: job.description ?? "",
+  });
+}
+
 async function handleCreateJob(event: React.FormEvent) {
   event.preventDefault();
 
@@ -245,12 +259,18 @@ async function handleCreateJob(event: React.FormEvent) {
   }
 
   try {
-    const newJob = await createJob(jobFormData);
+    const savedJob =
+      editingJobId === null
+        ? await createJob(jobFormData)
+        : await updateJob(editingJobId, jobFormData);
 
-    setJobs((currentJobs: any[]) => [
-      ...currentJobs,
-      newJob,
-    ]);
+    setJobs((currentJobs: any[]) =>
+      editingJobId === null
+        ? [...currentJobs, savedJob]
+        : currentJobs.map((job) =>
+            job.id === editingJobId ? savedJob : job
+          )
+    );
 
     setJobFormData({
       company: "",
@@ -259,6 +279,7 @@ async function handleCreateJob(event: React.FormEvent) {
       job_url: "",
       description: "",
     });
+    setEditingJobId(null);
   } catch (error) {
     console.error(error);
   }
@@ -602,6 +623,13 @@ async function handleDeleteJob(jobId: number) {
               <p className="mt-2">
                 {job.description}
               </p>
+
+              <button
+                onClick={() => handleEditJob(job)}
+                className="mt-3 mr-2 rounded border px-3 py-1"
+              >
+                Edit
+              </button>
 
               <button
                 onClick={() => handleDeleteJob(job.id)}

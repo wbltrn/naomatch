@@ -123,6 +123,34 @@ export async function createJob(job: {
   return response.json();
 }
 
+export async function updateJob(
+  jobId: number,
+  job: {
+    company: string;
+    title: string;
+    location?: string;
+    job_url?: string;
+    description: string;
+  }
+) {
+  const response = await fetch(
+    `http://127.0.0.1:8000/jobs/${jobId}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(job),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to update job");
+  }
+
+  return response.json();
+}
+
 export async function deleteJob(jobId: number) {
   const response = await fetch(
     `http://127.0.0.1:8000/jobs/${jobId}`,
