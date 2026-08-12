@@ -710,6 +710,11 @@ const filteredApplications = sortedApplications.filter(
             daysRemaining >= 0 && daysRemaining <= 7;
         }
 
+        if (deadlineFilter === "due-30") {
+          matchesDeadline =
+            daysRemaining >= 0 && daysRemaining <= 30;
+        }
+
         if (deadlineFilter === "past-due") {
           matchesDeadline = daysRemaining < 0;
         }
@@ -1444,6 +1449,7 @@ return (
       >
         <option value="all">All Deadlines</option>
         <option value="due-soon">Due Within 7 Days</option>
+        <option value="due-30">Due Within 30 Days</option>
         <option value="past-due">Past Due</option>
       </select>
 
