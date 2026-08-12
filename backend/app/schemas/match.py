@@ -1,5 +1,11 @@
 from pydantic import BaseModel
 
+class SemanticMatchResponse(BaseModel):
+    semantic_score: float
+    matched_responsibilities: list[str]
+    strengths: list[str]
+    gaps: list[str]
+
 class BulletMatchResponse(BaseModel):
     bullet_id: int
     bullet_text: str
