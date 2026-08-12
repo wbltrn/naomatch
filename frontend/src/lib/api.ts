@@ -175,3 +175,25 @@ export async function getApplications() {
 
   return response.json();
 }
+
+export async function createApplication(application: {
+  job_id: number;
+  status: string;
+  applied_date?: string | null;
+  deadline?: string | null;
+  notes?: string | null;
+}) {
+  const response = await fetch("http://127.0.0.1:8000/applications/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(application),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to create application");
+  }
+
+  return response.json();
+}

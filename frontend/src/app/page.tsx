@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   checkBackend,
+  createApplication,
   createExperience,
   createJob,
   deleteExperience,
@@ -33,6 +34,14 @@ const [jobFormData, setJobFormData] = useState({
   location: "",
   job_url: "",
   description: "",
+});
+
+const [applicationFormData, setApplicationFormData] = useState({
+  job_id: "",
+  status: "Interested",
+  applied_date: "",
+  deadline: "",
+  notes: "",
 });
 
 const [editingExperienceId, setEditingExperienceId] = useState<number | null>(
@@ -348,7 +357,40 @@ function handleCancelJobEdit() {
   });
 }
 
- return (
+async function handleCreateApplication(event: React.FormEvent) {
+  event.preventDefault();
+
+  if (!applicationFormData.job_id) {
+    return;
+  }
+
+  try {
+    const newApplication = await createApplication({
+      job_id: Number(applicationFormData.job_id),
+      status: applicationFormData.status,
+      applied_date: applicationFormData.applied_date || null,
+      deadline: applicationFormData.deadline || null,
+      notes: applicationFormData.notes.trim() || null,
+    });
+
+    setApplications((currentApplications: any[]) => [
+      ...currentApplications,
+      newApplication,
+    ]);
+
+    setApplicationFormData({
+      job_id: "",
+      status: "Interested",
+      applied_date: "",
+      deadline: "",
+      notes: "",
+    });
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+return (
   <main className="p-8">
     <h1 className="text-3xl font-bold">Naomatch</h1>
 
@@ -406,24 +448,42 @@ function handleCancelJobEdit() {
         className="block w-full rounded border p-2"
       />
 
-      <input
-        type="date"
-        value={formData.start_date}
-        onChange={(e) =>
-          setFormData({ ...formData, start_date: e.target.value })
-        }
-        className="block w-full rounded border p-2"
-      />
+      <div>
+        <label className="mb-1 block text-sm font-medium">
+          Start Date
+        </label>
 
-      <input
-        type="date"
-        value={formData.end_date}
-        onChange={(e) =>
-          setFormData({ ...formData, end_date: e.target.value })
-        }
-        disabled={isCurrent}
-        className="block w-full rounded border p-2"
-      />
+        <input
+          type="date"
+          value={formData.start_date}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              start_date: e.target.value,
+            })
+          }
+          className="block w-full rounded border p-2"
+        />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium">
+          End Date
+        </label>
+
+        <input
+          type="date"
+          value={formData.end_date}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              end_date: e.target.value,
+            })
+          }
+          disabled={isCurrent}
+          className="block w-full rounded border p-2"
+        />
+      </div>
 
       <label className="flex items-center gap-2">
         <input
@@ -434,7 +494,10 @@ function handleCancelJobEdit() {
             setIsCurrent(checked);
 
             if (checked) {
-              setFormData({ ...formData, end_date: "" });
+              setFormData({
+                ...formData,
+                end_date: "",
+              });
             }
           }}
         />
@@ -445,7 +508,10 @@ function handleCancelJobEdit() {
         placeholder="Description"
         value={formData.description}
         onChange={(e) =>
-          setFormData({ ...formData, description: e.target.value })
+          setFormData({
+            ...formData,
+            description: e.target.value,
+          })
         }
         className="block w-full rounded border p-2"
       />
@@ -473,7 +539,9 @@ function handleCancelJobEdit() {
                 );
 
                 setBullets(
-                  updatedBullets.length > 0 ? updatedBullets : [""]
+                  updatedBullets.length > 0
+                    ? updatedBullets
+                    : [""]
                 );
               }}
               className="rounded border px-3"
@@ -497,7 +565,9 @@ function handleCancelJobEdit() {
           type="submit"
           className="rounded bg-black px-4 py-2 text-white"
         >
-          {editingExperienceId === null ? "Add Experience" : "Save Changes"}
+          {editingExperienceId === null
+            ? "Add Experience"
+            : "Save Changes"}
         </button>
 
         {editingExperienceId !== null && (
@@ -512,15 +582,14 @@ function handleCancelJobEdit() {
       </div>
 
       {formMessage && (
-        <p className="text-sm">
-          {formMessage}
-        </p>
+        <p className="text-sm">{formMessage}</p>
       )}
-
     </form>
 
     <div className="mt-8">
-      <h2 className="text-2xl font-semibold">Experiences</h2>
+      <h2 className="text-2xl font-semibold">
+        Experiences
+      </h2>
 
       {deleteMessage && (
         <p className="mt-2 text-sm">
@@ -529,11 +598,15 @@ function handleCancelJobEdit() {
       )}
 
       {loading ? (
-        <p className="mt-4">Loading experiences...</p>
+        <p className="mt-4">
+          Loading experiences...
+        </p>
       ) : error ? (
         <p className="mt-4">{error}</p>
       ) : experiences.length === 0 ? (
-        <p className="mt-4">No experiences added yet.</p>
+        <p className="mt-4">
+          No experiences added yet.
+        </p>
       ) : (
         experiences.map((experience: any) => (
           <div
@@ -546,34 +619,53 @@ function handleCancelJobEdit() {
 
             <p className="mt-1">
               {experience.organization}
-              {experience.location ? ` • ${experience.location}` : ""}
+              {experience.location
+                ? ` • ${experience.location}`
+                : ""}
             </p>
 
             <p className="text-sm">
-              {experience.type} • {formatExperienceDate(experience.start_date)}
+              {experience.type} •{" "}
+              {formatExperienceDate(
+                experience.start_date
+              )}
               {" - "}
-              {formatExperienceDate(experience.end_date)}
+              {formatExperienceDate(
+                experience.end_date
+              )}
             </p>
 
-            <p className="mt-2">{experience.description}</p>
+            <p className="mt-2">
+              {experience.description}
+            </p>
 
             {experience.bullets?.length > 0 && (
               <ul className="mt-2 list-disc pl-5">
-                {experience.bullets.map((bullet: any) => (
-                  <li key={bullet.id}>{bullet.bullet_text}</li>
-                ))}
+                {experience.bullets.map(
+                  (bullet: any) => (
+                    <li key={bullet.id}>
+                      {bullet.bullet_text}
+                    </li>
+                  )
+                )}
               </ul>
             )}
 
             <button
-              onClick={() => handleEditExperience(experience)}
+              onClick={() =>
+                handleEditExperience(experience)
+              }
               className="mt-3 mr-2 rounded border px-3 py-1"
             >
               Edit
             </button>
 
             <button
-              onClick={() => handleDeleteExperience(experience.id)}
+              onClick={() =>
+                handleDeleteExperience(
+                  experience.id
+                )
+              }
               className="mt-3 rounded border px-3 py-1"
             >
               Delete
@@ -582,15 +674,23 @@ function handleCancelJobEdit() {
         ))
       )}
 
-      <form onSubmit={handleCreateJob} className="mt-8 space-y-3">
-        <h2 className="text-2xl font-semibold">Add Job Posting</h2>
+      <form
+        onSubmit={handleCreateJob}
+        className="mt-8 space-y-3"
+      >
+        <h2 className="text-2xl font-semibold">
+          Add Job Posting
+        </h2>
 
         <input
           type="text"
           placeholder="Company"
           value={jobFormData.company}
           onChange={(e) =>
-            setJobFormData({ ...jobFormData, company: e.target.value })
+            setJobFormData({
+              ...jobFormData,
+              company: e.target.value,
+            })
           }
           className="block w-full rounded border p-2"
         />
@@ -600,7 +700,10 @@ function handleCancelJobEdit() {
           placeholder="Job Title"
           value={jobFormData.title}
           onChange={(e) =>
-            setJobFormData({ ...jobFormData, title: e.target.value })
+            setJobFormData({
+              ...jobFormData,
+              title: e.target.value,
+            })
           }
           className="block w-full rounded border p-2"
         />
@@ -610,7 +713,10 @@ function handleCancelJobEdit() {
           placeholder="Location"
           value={jobFormData.location}
           onChange={(e) =>
-            setJobFormData({ ...jobFormData, location: e.target.value })
+            setJobFormData({
+              ...jobFormData,
+              location: e.target.value,
+            })
           }
           className="block w-full rounded border p-2"
         />
@@ -620,7 +726,10 @@ function handleCancelJobEdit() {
           placeholder="Job URL"
           value={jobFormData.job_url}
           onChange={(e) =>
-            setJobFormData({ ...jobFormData, job_url: e.target.value })
+            setJobFormData({
+              ...jobFormData,
+              job_url: e.target.value,
+            })
           }
           className="block w-full rounded border p-2"
         />
@@ -629,7 +738,10 @@ function handleCancelJobEdit() {
           placeholder="Job Description"
           value={jobFormData.description}
           onChange={(e) =>
-            setJobFormData({ ...jobFormData, description: e.target.value })
+            setJobFormData({
+              ...jobFormData,
+              description: e.target.value,
+            })
           }
           className="block w-full rounded border p-2"
         />
@@ -639,7 +751,9 @@ function handleCancelJobEdit() {
             type="submit"
             className="rounded bg-black px-4 py-2 text-white"
           >
-            {editingJobId === null ? "Add Job" : "Save Changes"}
+            {editingJobId === null
+              ? "Add Job"
+              : "Save Changes"}
           </button>
 
           {editingJobId !== null && (
@@ -652,6 +766,7 @@ function handleCancelJobEdit() {
             </button>
           )}
         </div>
+
         {jobFormMessage && (
           <p className="text-sm">
             {jobFormMessage}
@@ -660,7 +775,9 @@ function handleCancelJobEdit() {
       </form>
 
       <div className="mt-8">
-        <h2 className="text-2xl font-semibold">Jobs</h2>
+        <h2 className="text-2xl font-semibold">
+          Jobs
+        </h2>
 
         {jobDeleteMessage && (
           <p className="mt-2 text-sm">
@@ -669,7 +786,9 @@ function handleCancelJobEdit() {
         )}
 
         {jobs.length === 0 ? (
-          <p className="mt-4">No job postings added yet.</p>
+          <p className="mt-4">
+            No job postings added yet.
+          </p>
         ) : (
           jobs.map((job: any) => (
             <div
@@ -702,14 +821,18 @@ function handleCancelJobEdit() {
               </p>
 
               <button
-                onClick={() => handleEditJob(job)}
+                onClick={() =>
+                  handleEditJob(job)
+                }
                 className="mt-3 mr-2 rounded border px-3 py-1"
               >
                 Edit
               </button>
 
               <button
-                onClick={() => handleDeleteJob(job.id)}
+                onClick={() =>
+                  handleDeleteJob(job.id)
+                }
                 className="mt-3 rounded border px-3 py-1"
               >
                 Delete
@@ -720,11 +843,133 @@ function handleCancelJobEdit() {
       </div>
     </div>
 
+    <form
+      onSubmit={handleCreateApplication}
+      className="mt-8 space-y-3"
+    >
+      <h2 className="text-2xl font-semibold">
+        Track Application
+      </h2>
+
+      <select
+        value={applicationFormData.job_id}
+        onChange={(e) =>
+          setApplicationFormData({
+            ...applicationFormData,
+            job_id: e.target.value,
+          })
+        }
+        className="block w-full rounded border p-2"
+      >
+        <option value="">
+          Select a job
+        </option>
+
+        {jobs.map((job: any) => (
+          <option
+            key={job.id}
+            value={job.id}
+          >
+            {job.company} — {job.title}
+          </option>
+        ))}
+      </select>
+
+      <select
+        value={applicationFormData.status}
+        onChange={(e) =>
+          setApplicationFormData({
+            ...applicationFormData,
+            status: e.target.value,
+          })
+        }
+        className="block w-full rounded border p-2"
+      >
+        <option value="Interested">
+          Interested
+        </option>
+        <option value="Applied">
+          Applied
+        </option>
+        <option value="Interview">
+          Interview
+        </option>
+        <option value="Offer">
+          Offer
+        </option>
+        <option value="Rejected">
+          Rejected
+        </option>
+        <option value="Withdrawn">
+          Withdrawn
+        </option>
+      </select>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium">
+          Applied Date
+        </label>
+
+        <input
+          type="date"
+          value={applicationFormData.applied_date}
+          onChange={(e) =>
+            setApplicationFormData({
+              ...applicationFormData,
+              applied_date: e.target.value,
+            })
+          }
+          className="block w-full rounded border p-2"
+        />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium">
+          Application Due Date
+        </label>
+
+        <input
+          type="date"
+          value={applicationFormData.deadline}
+          onChange={(e) =>
+            setApplicationFormData({
+              ...applicationFormData,
+              deadline: e.target.value,
+            })
+          }
+          className="block w-full rounded border p-2"
+        />
+      </div>
+
+      <textarea
+        placeholder="Notes"
+        value={applicationFormData.notes}
+        onChange={(e) =>
+          setApplicationFormData({
+            ...applicationFormData,
+            notes: e.target.value,
+          })
+        }
+        className="block w-full rounded border p-2"
+      />
+
+      <button
+        type="submit"
+        className="rounded bg-black px-4 py-2 text-white"
+      >
+        Track Application
+      </button>
+    </form>
+
     <div className="mt-8">
-      <h2 className="text-2xl font-semibold">Applications</h2>
+      <h2 className="text-2xl font-semibold">
+        Applications
+      </h2>
 
       {applications.length === 0 ? (
-        <p className="mt-4">No applications tracked yet.</p>
+        <p className="mt-4">
+          No applications tracked yet.
+        </p>
       ) : (
         applications.map((application: any) => (
           <div
@@ -732,24 +977,28 @@ function handleCancelJobEdit() {
             className="mt-4 rounded border p-4"
           >
             <p>
-              <strong>Status:</strong> {application.status}
+              <strong>Status:</strong>{" "}
+              {application.status}
             </p>
 
             {application.applied_date && (
               <p>
-                <strong>Applied:</strong> {application.applied_date}
+                <strong>Applied:</strong>{" "}
+                {application.applied_date}
               </p>
             )}
 
             {application.deadline && (
               <p>
-                <strong>Deadline:</strong> {application.deadline}
+                <strong>Deadline:</strong>{" "}
+                {application.deadline}
               </p>
             )}
 
             {application.notes && (
               <p className="mt-2">
-                <strong>Notes:</strong> {application.notes}
+                <strong>Notes:</strong>{" "}
+                {application.notes}
               </p>
             )}
 
