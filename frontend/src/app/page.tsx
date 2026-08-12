@@ -46,6 +46,7 @@ const [deleteMessage, setDeleteMessage] = useState("");
 const [isCurrent, setIsCurrent] = useState(false);
 const [jobs, setJobs] = useState<any[]>([]);
 const [editingJobId, setEditingJobId] = useState<number | null>(null);
+const [jobFormMessage, setJobFormMessage] = useState("");
 
 useEffect(() => {
  async function loadExperiences() {
@@ -249,12 +250,16 @@ function handleEditJob(job: any) {
 
 async function handleCreateJob(event: React.FormEvent) {
   event.preventDefault();
+  setJobFormMessage("");
 
   if (
     !jobFormData.company.trim() ||
     !jobFormData.title.trim() ||
     !jobFormData.description.trim()
   ) {
+    setJobFormMessage(
+      "Company, job title, and job description are required."
+    );
     return;
   }
 
@@ -280,8 +285,10 @@ async function handleCreateJob(event: React.FormEvent) {
       description: "",
     });
     setEditingJobId(null);
+    setJobFormMessage("Job posting saved successfully.");
   } catch (error) {
     console.error(error);
+    setJobFormMessage("Unable to save job posting.");
   }
 }
 
@@ -621,6 +628,11 @@ function handleCancelJobEdit() {
             </button>
           )}
         </div>
+        {jobFormMessage && (
+          <p className="text-sm">
+            {jobFormMessage}
+          </p>
+        )}
       </form>
 
       <div className="mt-8">
