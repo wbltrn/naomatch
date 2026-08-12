@@ -122,3 +122,18 @@ export async function createJob(job: {
 
   return response.json();
 }
+
+export async function deleteJob(jobId: number) {
+  const response = await fetch(
+    `http://127.0.0.1:8000/jobs/${jobId}`,
+    {
+      method: "DELETE",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to delete job");
+  }
+
+  return response.json();
+}

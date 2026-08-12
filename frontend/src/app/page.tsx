@@ -6,6 +6,7 @@ import {
   createExperience,
   createJob,
   deleteExperience,
+  deleteJob,
   getExperiences,
   getJobs,
   updateExperience,
@@ -258,6 +259,26 @@ async function handleCreateJob(event: React.FormEvent) {
       job_url: "",
       description: "",
     });
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+async function handleDeleteJob(jobId: number) {
+  const confirmed = window.confirm(
+    "Are you sure you want to delete this job posting?"
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await deleteJob(jobId);
+
+    setJobs((currentJobs: any[]) =>
+      currentJobs.filter((job) => job.id !== jobId)
+    );
   } catch (error) {
     console.error(error);
   }
@@ -581,6 +602,13 @@ async function handleCreateJob(event: React.FormEvent) {
               <p className="mt-2">
                 {job.description}
               </p>
+
+              <button
+                onClick={() => handleDeleteJob(job.id)}
+                className="mt-3 rounded border px-3 py-1"
+              >
+                Delete
+              </button>
             </div>
           ))
         )}
