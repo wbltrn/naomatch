@@ -1443,17 +1443,42 @@ return (
         Applications
       </h2>
 
-      <div className="mt-3 flex flex-wrap gap-3 text-sm">
-        <span>Total: {applicationCounts.total}</span>
-        <span>Interested: {applicationCounts.interested}</span>
-        <span>Applied: {applicationCounts.applied}</span>
-        <span>Interviews: {applicationCounts.interview}</span>
-        <span>Offers: {applicationCounts.offer}</span>
-        <span>Rejected: {applicationCounts.rejected}</span>
-        <span>Withdrawn: {applicationCounts.withdrawn}</span>
-        <span>Overdue: {applicationCounts.overdue}</span>
-        <span>Due Today: {applicationCounts.dueToday}</span>
+    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="rounded border p-4">
+        <p className="text-sm">Total Applications</p>
+        <p className="mt-1 text-2xl font-bold">
+          {applicationCounts.total}
+        </p>
       </div>
+
+      <div className="rounded border p-4">
+        <p className="text-sm">Applied</p>
+        <p className="mt-1 text-2xl font-bold">
+          {applicationCounts.applied}
+        </p>
+      </div>
+
+      <div className="rounded border p-4">
+        <p className="text-sm">Interviews</p>
+        <p className="mt-1 text-2xl font-bold">
+          {applicationCounts.interview}
+        </p>
+      </div>
+
+      <div className="rounded border p-4">
+        <p className="text-sm">Offers</p>
+        <p className="mt-1 text-2xl font-bold">
+          {applicationCounts.offer}
+        </p>
+      </div>
+
+      <div className="rounded border p-4">
+        <p className="text-sm">Overdue</p>
+        <p className="mt-1 text-2xl font-bold">
+          {applicationCounts.overdue}
+        </p>
+      </div>
+    </div>
 
       <select
         value={applicationStatusFilter}
