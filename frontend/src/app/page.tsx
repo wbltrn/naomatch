@@ -801,6 +801,7 @@ function handleClearApplicationFilters() {
   setApplicationStatusFilter("All");
   setApplicationSearch("");
   setApplicationSort("status");
+  setDeadlineFilter("all");
 }
 
 const hasActiveApplicationFilters =
