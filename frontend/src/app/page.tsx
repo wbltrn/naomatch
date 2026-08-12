@@ -556,6 +556,42 @@ const applicationCounts = {
   ).length,
 };
 
+function getDeadlineMessage(deadline: string | null) {
+  if (!deadline) {
+    return null;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const deadlineDate = new Date(`${deadline}T00:00:00`);
+
+  const differenceInMilliseconds =
+    deadlineDate.getTime() - today.getTime();
+
+  const daysRemaining = Math.ceil(
+    differenceInMilliseconds / (1000 * 60 * 60 * 24)
+  );
+
+  if (daysRemaining < 0) {
+    return "Deadline passed";
+  }
+
+  if (daysRemaining === 0) {
+    return "Due today";
+  }
+
+  if (daysRemaining === 1) {
+    return "Due tomorrow";
+  }
+
+  if (daysRemaining <= 7) {
+    return `Due in ${daysRemaining} days`;
+  }
+
+  return null;
+}
+
 return (
   <main className="p-8">
     <h1 className="text-3xl font-bold">Naomatch</h1>
@@ -1192,12 +1228,20 @@ return (
               </p>
             )}
 
-            {application.deadline && (
+           {application.deadline && (
+            <div>
               <p>
                 <strong>Deadline:</strong>{" "}
                 {application.deadline}
               </p>
-            )}
+
+              {getDeadlineMessage(application.deadline) && (
+                <p className="text-sm font-medium">
+                  {getDeadlineMessage(application.deadline)}
+                </p>
+              )}
+            </div>
+          )}
 
             {application.notes && (
               <p className="mt-2">
