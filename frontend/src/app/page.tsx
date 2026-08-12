@@ -749,6 +749,21 @@ const applicationCounts = {
   withdrawn: applications.filter(
     (application: any) => application.status === "Withdrawn"
   ).length,
+
+  overdue: applications.filter((application: any) => {
+    if (!application.deadline) {
+      return false;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const deadlineDate = new Date(
+      `${application.deadline}T00:00:00`
+    );
+
+    return deadlineDate < today;
+  }).length,
 };
 
 function getDeadlineMessage(deadline: string | null) {
@@ -1415,6 +1430,7 @@ return (
         <span>Offers: {applicationCounts.offer}</span>
         <span>Rejected: {applicationCounts.rejected}</span>
         <span>Withdrawn: {applicationCounts.withdrawn}</span>
+        <span>Overdue: {applicationCounts.overdue}</span>
       </div>
 
       <select
