@@ -47,6 +47,7 @@ const [isCurrent, setIsCurrent] = useState(false);
 const [jobs, setJobs] = useState<any[]>([]);
 const [editingJobId, setEditingJobId] = useState<number | null>(null);
 const [jobFormMessage, setJobFormMessage] = useState("");
+const [jobDeleteMessage, setJobDeleteMessage] = useState("");
 
 useEffect(() => {
  async function loadExperiences() {
@@ -307,8 +308,10 @@ async function handleDeleteJob(jobId: number) {
     setJobs((currentJobs: any[]) =>
       currentJobs.filter((job) => job.id !== jobId)
     );
+    setJobDeleteMessage("Job posting deleted successfully.");
   } catch (error) {
     console.error(error);
+    setJobDeleteMessage("Unable to delete job posting.");
   }
 }
 
@@ -637,6 +640,12 @@ function handleCancelJobEdit() {
 
       <div className="mt-8">
         <h2 className="text-2xl font-semibold">Jobs</h2>
+
+        {jobDeleteMessage && (
+          <p className="mt-2 text-sm">
+            {jobDeleteMessage}
+          </p>
+        )}
 
         {jobs.length === 0 ? (
           <p className="mt-4">No job postings added yet.</p>
