@@ -82,6 +82,18 @@ def analyze_semantic_match(
     if cached_record is not None:
         semantic_match = SemanticMatchResponse(
             semantic_score=float(cached_record.semantic_score),
+            responsibility_score=float(
+                cached_record.responsibility_score
+            ),
+            technical_score=float(
+                cached_record.technical_score
+            ),
+            domain_score=float(
+                cached_record.domain_score
+            ),
+            evidence_score=float(
+                cached_record.evidence_score
+            ),
             matched_responsibilities=json.loads(
                 cached_record.matched_responsibilities
             ),
@@ -117,10 +129,17 @@ Experience bullets:
 Evaluate semantic relevance, not just exact keyword overlap.
 
 Return:
+Return:
 - semantic_score from 0 to 100
-- matched_responsibilities: responsibilities from the job that this experience supports
+- responsibility_score from 0 to 100: how well the experience aligns with the actual responsibilities of the job
+- technical_score from 0 to 100: how well the technical skills, tools, methods, and engineering capabilities align
+- domain_score from 0 to 100: how relevant the engineering domain, industry context, and problem space are
+- evidence_score from 0 to 100: how strong and specific the evidence is in the experience description and bullets
+- matched_responsibilities: responsibilities from the job that this experience clearly supports
 - strengths: strong evidence from the experience that makes it relevant
 - gaps: important job requirements that are not clearly supported by this experience
+
+Score conservatively. Do not give high scores based on one isolated skill or vague similarity.
 """
 
     try:
@@ -137,11 +156,23 @@ Return:
             response.text
         )
 
+        semantic_match.semantic_score = round(
+            (semantic_match.responsibility_score * 0.35)
+            + (semantic_match.technical_score * 0.35)
+            + (semantic_match.domain_score * 0.15)
+            + (semantic_match.evidence_score * 0.15),
+            2,
+        )
+
         # Only persist a real Gemini result.
         # Failed calls are handled in the except block and are not cached.
         cached_record = SemanticMatchCache(
             cache_key=cache_key,
             semantic_score=semantic_match.semantic_score,
+            responsibility_score=semantic_match.responsibility_score,
+            technical_score=semantic_match.technical_score,
+            domain_score=semantic_match.domain_score,
+            evidence_score=semantic_match.evidence_score,
             matched_responsibilities=json.dumps(
                 semantic_match.matched_responsibilities
             ),
@@ -165,6 +196,10 @@ Return:
 
         return SemanticMatchResponse(
             semantic_score=0.0,
+            responsibility_score=0.0,
+            technical_score=0.0,
+            domain_score=0.0,
+            evidence_score=0.0,
             matched_responsibilities=[],
             strengths=[],
             gaps=[],

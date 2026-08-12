@@ -2,6 +2,10 @@ from pydantic import BaseModel
 
 class SemanticMatchResponse(BaseModel):
     semantic_score: float
+    responsibility_score: float
+    technical_score: float
+    domain_score: float
+    evidence_score: float
     matched_responsibilities: list[str]
     strengths: list[str]
     gaps: list[str]

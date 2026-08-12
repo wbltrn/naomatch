@@ -20,6 +20,26 @@ class SemanticMatchCache(Base):
         nullable=False,
     )
 
+    responsibility_score = Column(
+        Float,
+        nullable=False,
+    )
+
+    technical_score = Column(
+        Float,
+        nullable=False,
+    )
+
+    domain_score = Column(
+        Float,
+        nullable=False,
+    )
+
+    evidence_score = Column(
+        Float,
+        nullable=False,
+    )
+
     matched_responsibilities = Column(
         Text,
         nullable=False,
