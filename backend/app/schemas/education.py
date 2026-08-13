@@ -19,6 +19,8 @@ class EducationBase(BaseModel):
 class EducationCreate(EducationBase):
     pass
 
+class EducationUpdate(EducationBase):
+    pass
 
 class EducationResponse(EducationBase):
     id: int
