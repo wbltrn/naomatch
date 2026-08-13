@@ -3,7 +3,11 @@ from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
 from app.models.experience import Experience, ExperienceBullet
-from app.schemas.experience import ExperienceCreate, ExperienceResponse
+from app.schemas.experience import (
+    ExperienceCreate,
+    ExperienceUpdate,
+    ExperienceResponse,
+)
 
 router = APIRouter(
     prefix="/experiences",
@@ -100,7 +104,7 @@ def delete_experience(
 @router.put("/{experience_id}", response_model=ExperienceResponse)
 def update_experience(
     experience_id: int,
-    experience_data: ExperienceCreate,
+    experience_data: ExperienceUpdate,
     db: Session = Depends(get_db),
 ):
     experience = (

@@ -33,6 +33,9 @@ class ExperienceBase(BaseModel):
 class ExperienceCreate(ExperienceBase):
     bullets: list[ExperienceBulletCreate] = []
 
+class ExperienceUpdate(ExperienceBase):
+    bullets: list[ExperienceBulletCreate] = []
+
 
 class ExperienceResponse(ExperienceBase):
     id: int
