@@ -10,6 +10,16 @@ from app.services.resume_tailor import (
     tailor_resume_content,
 )
 
+from fastapi.responses import FileResponse
+
+from app.models.profile import UserProfile
+from app.services.resume_builder import build_resume_render_data
+from app.services.resume_pdf import (
+    ResumePDFGenerationError,
+    compile_latex_to_pdf,
+)
+from app.services.resume_renderer import render_resume_latex
+
 
 router = APIRouter(
     prefix="/resume-tailor",
@@ -101,3 +111,111 @@ def tailor_resume_for_job(
             status_code=503,
             detail=str(error),
         ) from error
+
+@router.post(
+    "/job/{job_id}/pdf",
+)
+def generate_resume_pdf(
+    job_id: int,
+    db: Session = Depends(get_db),
+):
+    job = (
+        db.query(JobPosting)
+        .filter(JobPosting.id == job_id)
+        .first()
+    )
+
+    if job is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Job posting not found",
+        )
+
+    profile = db.query(UserProfile).first()
+
+    if profile is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User profile not found",
+        )
+
+    experiences = db.query(Experience).all()
+
+    vault_sections_map: dict[str, list[dict]] = {}
+
+    for experience in experiences:
+        section_type = experience.type
+
+        entry = {
+            "id": experience.id,
+            "title": experience.title,
+            "organization": experience.organization,
+            "location": experience.location,
+            "start_date": (
+                experience.start_date.isoformat()
+                if experience.start_date
+                else None
+            ),
+            "end_date": (
+                experience.end_date.isoformat()
+                if experience.end_date
+                else None
+            ),
+            "description": experience.description,
+            "bullets": [
+                bullet.bullet_text
+                for bullet in experience.bullets
+            ],
+        }
+
+        vault_sections_map.setdefault(
+            section_type,
+            [],
+        ).append(entry)
+
+    vault_sections = [
+        {
+            "section_type": section_type,
+            "items": items,
+        }
+        for section_type, items in vault_sections_map.items()
+    ]
+
+    try:
+        tailored_resume = tailor_resume_content(
+            db=db,
+            job_title=job.title,
+            job_description=job.description,
+            vault_sections=vault_sections,
+        )
+
+        render_data = build_resume_render_data(
+            profile,
+            tailored_resume,
+        )
+
+        latex_content = render_resume_latex(
+            render_data
+        )
+
+        pdf_path = compile_latex_to_pdf(
+            latex_content
+        )
+
+    except ResumeTailoringUnavailableError as error:
+        raise HTTPException(
+            status_code=503,
+            detail=str(error),
+        ) from error
+
+    except ResumePDFGenerationError as error:
+        raise HTTPException(
+            status_code=500,
+            detail="Resume PDF generation failed.",
+        ) from error
+
+    return FileResponse(
+        path=pdf_path,
+        media_type="application/pdf",
+        filename="tailored_resume.pdf",
+    )
