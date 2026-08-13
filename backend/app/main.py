@@ -17,6 +17,8 @@ from app.models.resume_tailor_cache import ResumeTailorCache
 
 from app.routers.resume_tailor import router as resume_tailor_router
 
+from app.models.profile import ProfileLink, UserProfile
+
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
