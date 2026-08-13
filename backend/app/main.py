@@ -2,23 +2,19 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from app.database import Base, engine
+from app.models.education import Education
+from app.models.skill import Skill
 
 from app.routers.experiences import router as experiences_router
-
 from app.routers.jobs import router as jobs_router
-
 from app.routers.applications import router as applications_router
-
 from app.routers.matches import router as matches_router
 
 from app.models.semantic_match_cache import SemanticMatchCache
-
 from app.models.resume_tailor_cache import ResumeTailorCache
 
 from app.routers.resume_tailor import router as resume_tailor_router
-
 from app.models.profile import ProfileLink, UserProfile
-
 from app.routers.profile import router as profile_router
 
 Base.metadata.create_all(bind=engine)
