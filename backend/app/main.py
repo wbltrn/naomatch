@@ -21,6 +21,8 @@ from app.routers.vault import router as vault_router
 from app.routers.education import router as education_router
 from app.routers.skills import router as skills_router
 
+from app.routers.resume_import import router as resume_import_router
+
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
@@ -46,6 +48,7 @@ app.include_router(profile_router)
 app.include_router(vault_router)
 app.include_router(education_router)
 app.include_router(skills_router)
+app.include_router(resume_import_router)
 
 @app.get("/")
 def root():
