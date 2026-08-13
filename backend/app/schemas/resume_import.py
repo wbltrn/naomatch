@@ -1,3 +1,5 @@
+from datetime import date
+
 from pydantic import BaseModel
 
 
@@ -19,8 +21,8 @@ class ImportedEducation(BaseModel):
     field_of_study: str | None = None
     minor: str | None = None
     location: str | None = None
-    start_date: str | None = None
-    graduation_date: str | None = None
+    start_date: date | None = None
+    graduation_date: date | None = None
     gpa: str | None = None
     coursework: list[str] = []
     honors: list[str] = []
@@ -31,8 +33,8 @@ class ImportedExperience(BaseModel):
     organization: str | None = None
     title: str
     location: str | None = None
-    start_date: str | None = None
-    end_date: str | None = None
+    start_date: date | None = None
+    end_date: date | None = None
     description: str | None = None
     bullets: list[str] = []
 
@@ -47,3 +49,6 @@ class ResumeImportProposal(BaseModel):
     education: list[ImportedEducation]
     experiences: list[ImportedExperience]
     skills: list[ImportedSkill]
+
+class ResumeImportConfirm(BaseModel):
+    proposal: ResumeImportProposal

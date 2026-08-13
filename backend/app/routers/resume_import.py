@@ -1,3 +1,10 @@
+from sqlalchemy.orm import Session
+from fastapi import Depends
+
+from app.database import SessionLocal
+from app.schemas.resume_import import ResumeImportConfirm
+from app.services.resume_import_confirm import confirm_resume_import
+
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from app.services.resume_importer import (
@@ -10,6 +17,13 @@ from app.services.resume_parser import (
     parse_resume_text,
 )
 
+def get_db():
+    db = SessionLocal()
+
+    try:
+        yield db
+    finally:
+        db.close()
 
 router = APIRouter(
     prefix="/vault/import",
@@ -53,3 +67,13 @@ async def import_resume(
         "proposal": proposal.model_dump(),
         "status": "review_required",
     }
+
+@router.post("/confirm")
+def confirm_import(
+    confirm_data: ResumeImportConfirm,
+    db: Session = Depends(get_db),
+):
+    return confirm_resume_import(
+        db=db,
+        proposal=confirm_data.proposal,
+    )
