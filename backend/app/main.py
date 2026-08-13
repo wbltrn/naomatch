@@ -16,6 +16,7 @@ from app.models.resume_tailor_cache import ResumeTailorCache
 from app.routers.resume_tailor import router as resume_tailor_router
 from app.models.profile import ProfileLink, UserProfile
 from app.routers.profile import router as profile_router
+from app.routers.vault import router as vault_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -39,6 +40,7 @@ app.include_router(applications_router)
 app.include_router(matches_router)
 app.include_router(resume_tailor_router)
 app.include_router(profile_router)
+app.include_router(vault_router)
 
 @app.get("/")
 def root():
