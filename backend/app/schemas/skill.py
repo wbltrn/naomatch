@@ -10,6 +10,10 @@ class SkillCreate(SkillBase):
     pass
 
 
+class SkillUpdate(SkillBase):
+    pass
+
+
 class SkillResponse(SkillBase):
     id: int
 
