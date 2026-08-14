@@ -191,7 +191,7 @@ export async function createApplication(application: {
     body: JSON.stringify(application),
   });
 
- if (!response.ok) {
+if (!response.ok) {
   const errorData = await response.json();
 
   throw new Error(
@@ -239,6 +239,114 @@ export async function deleteApplication(applicationId: number) {
 
   if (!response.ok) {
     throw new Error("Failed to delete application");
+  }
+
+  return response.json();
+}
+
+export type ResumeImportLink = {
+  label: string;
+  url: string;
+};
+
+export type ResumeImportProfile = {
+  name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  links: ResumeImportLink[];
+};
+
+export type ResumeImportEducation = {
+  school: string;
+  degree?: string | null;
+  field_of_study?: string | null;
+  minor?: string | null;
+  location?: string | null;
+  start_date?: string | null;
+  graduation_date?: string | null;
+  gpa?: string | null;
+  coursework: string[];
+  honors: string[];
+};
+
+export type ResumeImportExperience = {
+  type: string;
+  organization?: string | null;
+  title: string;
+  location?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  description?: string | null;
+  bullets: string[];
+};
+
+export type ResumeImportSkill = {
+  category?: string | null;
+  name: string;
+};
+
+export type ResumeImportProposal = {
+  profile: ResumeImportProfile;
+  education: ResumeImportEducation[];
+  experiences: ResumeImportExperience[];
+  skills: ResumeImportSkill[];
+};
+
+export type ResumeImportResponse = {
+  filename: string;
+  extracted_text: string;
+  proposal: ResumeImportProposal;
+  status: string;
+};
+
+export async function uploadResumeForImport(
+  file: File
+): Promise<ResumeImportResponse> {
+  const formData = new FormData();
+
+  formData.append("file", file);
+
+  const response = await fetch(
+    `${API_URL}/vault/import/resume`,
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      errorData?.detail || "Failed to import resume"
+    );
+  }
+
+  return response.json();
+}
+
+export async function confirmResumeImport(
+  proposal: ResumeImportProposal
+) {
+  const response = await fetch(
+    `${API_URL}/vault/import/confirm`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        proposal,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      errorData?.detail || "Failed to confirm resume import"
+    );
   }
 
   return response.json();
