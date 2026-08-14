@@ -430,3 +430,275 @@ export async function getProfile(): Promise<ProfileData> {
 
   return response.json();
 }
+
+export async function updateProfile(
+  profile: ProfileData
+): Promise<ProfileData> {
+  const response = await fetch(`${API_URL}/profile`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(profile),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      errorData?.detail || "Failed to update profile"
+    );
+  }
+
+  return response.json();
+}
+
+
+export type EducationPayload = {
+  school: string;
+  degree?: string | null;
+  field_of_study?: string | null;
+  minor?: string | null;
+  location?: string | null;
+  start_date?: string | null;
+  graduation_date?: string | null;
+  gpa?: string | null;
+  coursework?: string | null;
+  honors?: string | null;
+};
+
+
+export async function createEducation(
+  education: EducationPayload
+) {
+  const response = await fetch(`${API_URL}/education`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(education),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      errorData?.detail || "Failed to create education"
+    );
+  }
+
+  return response.json();
+}
+
+
+export async function updateEducation(
+  educationId: number,
+  education: EducationPayload
+) {
+  const response = await fetch(
+    `${API_URL}/education/${educationId}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(education),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      errorData?.detail || "Failed to update education"
+    );
+  }
+
+  return response.json();
+}
+
+
+export async function deleteEducation(
+  educationId: number
+) {
+  const response = await fetch(
+    `${API_URL}/education/${educationId}`,
+    {
+      method: "DELETE",
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      errorData?.detail || "Failed to delete education"
+    );
+  }
+
+  return response.json();
+}
+
+
+export type ExperiencePayload = {
+  type: string;
+  organization?: string | null;
+  title: string;
+  location?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  description?: string | null;
+  bullets: {
+    bullet_text: string;
+  }[];
+};
+
+
+export async function createVaultExperience(
+  experience: ExperiencePayload
+) {
+  const response = await fetch(`${API_URL}/experiences/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(experience),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      errorData?.detail || "Failed to create experience"
+    );
+  }
+
+  return response.json();
+}
+
+
+export async function updateVaultExperience(
+  experienceId: number,
+  experience: ExperiencePayload
+) {
+  const response = await fetch(
+    `${API_URL}/experiences/${experienceId}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(experience),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      errorData?.detail || "Failed to update experience"
+    );
+  }
+
+  return response.json();
+}
+
+
+export async function deleteVaultExperience(
+  experienceId: number
+) {
+  const response = await fetch(
+    `${API_URL}/experiences/${experienceId}`,
+    {
+      method: "DELETE",
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      errorData?.detail || "Failed to delete experience"
+    );
+  }
+
+  return response.json();
+}
+
+
+export type SkillPayload = {
+  category?: string | null;
+  name: string;
+};
+
+
+export async function createSkill(
+  skill: SkillPayload
+) {
+  const response = await fetch(`${API_URL}/skills`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(skill),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      errorData?.detail || "Failed to create skill"
+    );
+  }
+
+  return response.json();
+}
+
+
+export async function updateSkill(
+  skillId: number,
+  skill: SkillPayload
+) {
+  const response = await fetch(
+    `${API_URL}/skills/${skillId}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(skill),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      errorData?.detail || "Failed to update skill"
+    );
+  }
+
+  return response.json();
+}
+
+
+export async function deleteSkill(
+  skillId: number
+) {
+  const response = await fetch(
+    `${API_URL}/skills/${skillId}`,
+    {
+      method: "DELETE",
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      errorData?.detail || "Failed to delete skill"
+    );
+  }
+
+  return response.json();
+}

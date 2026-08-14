@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -21,7 +22,15 @@ class ExperienceBulletResponse(ExperienceBulletBase):
 
 
 class ExperienceBase(BaseModel):
-    type: str
+    type: Literal[
+        "work",
+        "project",
+        "leadership",
+        "research",
+        "volunteer",
+        "certification",
+        "award",
+    ]
     organization: str | None = None
     title: str
     location: str | None = None
@@ -32,6 +41,7 @@ class ExperienceBase(BaseModel):
 
 class ExperienceCreate(ExperienceBase):
     bullets: list[ExperienceBulletCreate] = []
+
 
 class ExperienceUpdate(ExperienceBase):
     bullets: list[ExperienceBulletCreate] = []
