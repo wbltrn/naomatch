@@ -101,6 +101,24 @@ export async function getJobs() {
   return response.json();
 }
 
+export async function getJob(jobId: number) {
+  const response = await fetch(
+    `${API_URL}/jobs/${jobId}`
+  );
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error("Job not found.");
+    }
+
+    throw new Error(
+      "Failed to fetch job."
+    );
+  }
+
+  return response.json();
+}
+
 export async function createJob(job: {
   company: string;
   title: string;
@@ -697,6 +715,30 @@ export async function deleteSkill(
 
     throw new Error(
       errorData?.detail || "Failed to delete skill"
+    );
+  }
+
+  return response.json();
+}
+
+export async function tailorResume(
+  jobId: number
+) {
+  const response = await fetch(
+    `${API_URL}/resume-tailor/job/${jobId}`,
+    {
+      method: "POST",
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response
+      .json()
+      .catch(() => null);
+
+    throw new Error(
+      errorData?.detail
+        || "Failed to tailor resume"
     );
   }
 
