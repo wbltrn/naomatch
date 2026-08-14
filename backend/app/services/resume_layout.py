@@ -30,9 +30,9 @@ SPACIOUS_LAYOUT = ResumeLayout(
     project_after=-1,
     bullet_after=2,
     bullet_list_after=0,
-    skills_item_sep=5,
-    skills_top_sep=3,
-    skills_after=0,
+    skills_item_sep=2,
+    skills_top_sep=1,
+    skills_after=-1,
 )
 
 
@@ -45,8 +45,8 @@ BALANCED_LAYOUT = ResumeLayout(
     project_after=-3,
     bullet_after=1,
     bullet_list_after=-2,
-    skills_item_sep=3,
-    skills_top_sep=2,
+    skills_item_sep=1,
+    skills_top_sep=0,
     skills_after=-2,
 )
 
@@ -60,9 +60,9 @@ COMPACT_LAYOUT = ResumeLayout(
     project_after=-5,
     bullet_after=-1,
     bullet_list_after=-4,
-    skills_item_sep=1,
+    skills_item_sep=0,
     skills_top_sep=0,
-    skills_after=-6,
+    skills_after=-4,
 )
 
 

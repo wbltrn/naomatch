@@ -7,15 +7,24 @@ from google import genai
 from google.genai import errors
 from sqlalchemy.orm import Session
 
-from app.models.resume_tailor_cache import ResumeTailorCache
-from app.schemas.resume import TailoredResumeDocument
+from app.models.resume_tailor_cache import (
+    ResumeTailorCache,
+)
+from app.schemas.resume import (
+    TailoredResumeDocument,
+)
+from app.services.resume_validator import (
+    validate_tailored_resume,
+)
 
 
 load_dotenv()
 
 
 client = genai.Client(
-    api_key=os.getenv("GEMINI_API_KEY")
+    api_key=os.getenv(
+        "GEMINI_API_KEY"
+    )
 )
 
 
@@ -25,10 +34,9 @@ RESUME_TAILOR_CACHE: dict[
 ] = {}
 
 
-# Increment this whenever the structure or behavior of
-# TailoredResumeDocument changes in a way that should invalidate
-# previously cached tailoring results.
-TAILORING_SCHEMA_VERSION = "3"
+# Increment whenever tailoring behavior or the validated output format
+# changes enough that existing cached results should be regenerated.
+TAILORING_SCHEMA_VERSION = "6"
 
 
 class ResumeTailoringUnavailableError(
@@ -47,8 +55,12 @@ def build_resume_tailor_cache_key(
             TAILORING_SCHEMA_VERSION
         ),
         "job_title": job_title,
-        "job_description": job_description,
-        "vault_sections": vault_sections,
+        "job_description": (
+            job_description
+        ),
+        "vault_sections": (
+            vault_sections
+        ),
     }
 
     serialized_payload = json.dumps(
@@ -58,7 +70,9 @@ def build_resume_tailor_cache_key(
     )
 
     return hashlib.sha256(
-        serialized_payload.encode("utf-8")
+        serialized_payload.encode(
+            "utf-8"
+        )
     ).hexdigest()
 
 
@@ -97,7 +111,10 @@ Skills: {", ".join(item.get("skills", []))}
             # Education
             # -----------------------------------------------------
 
-            if section_type == "education":
+            if (
+                section_type
+                == "education"
+            ):
                 coursework = "\n".join(
                     f"- {course}"
                     for course in item.get(
@@ -148,6 +165,13 @@ Honors:
                 )
             )
 
+            technologies = ", ".join(
+                item.get(
+                    "technologies",
+                    [],
+                )
+            )
+
             item_blocks.append(
                 f"""
 Entry ID: {item.get("id")}
@@ -158,6 +182,7 @@ Location: {item.get("location") or "Not provided"}
 Start Date: {item.get("start_date") or "Not provided"}
 End Date: {item.get("end_date") or "Not provided"}
 Description: {item.get("description") or "Not provided"}
+Technologies: {technologies or "Not provided"}
 
 Bullets:
 {bullets or "No bullets provided"}
@@ -189,7 +214,9 @@ def tailor_resume_content(
             job_description=(
                 job_description
             ),
-            vault_sections=vault_sections,
+            vault_sections=(
+                vault_sections
+            ),
         )
     )
 
@@ -197,7 +224,10 @@ def tailor_resume_content(
     # In-memory cache
     # -------------------------------------------------------------
 
-    if cache_key in RESUME_TAILOR_CACHE:
+    if (
+        cache_key
+        in RESUME_TAILOR_CACHE
+    ):
         return RESUME_TAILOR_CACHE[
             cache_key
         ]
@@ -207,7 +237,9 @@ def tailor_resume_content(
     # -------------------------------------------------------------
 
     cached_record = (
-        db.query(ResumeTailorCache)
+        db.query(
+            ResumeTailorCache
+        )
         .filter(
             ResumeTailorCache.cache_key
             == cache_key
@@ -217,8 +249,10 @@ def tailor_resume_content(
 
     if cached_record is not None:
         tailored_resume = (
-            TailoredResumeDocument.model_validate_json(
-                cached_record.tailored_resume
+            TailoredResumeDocument
+            .model_validate_json(
+                cached_record
+                .tailored_resume
             )
         )
 
@@ -232,8 +266,10 @@ def tailor_resume_content(
     # Build AI context
     # -------------------------------------------------------------
 
-    vault_text = build_vault_text(
-        vault_sections
+    vault_text = (
+        build_vault_text(
+            vault_sections
+        )
     )
 
     prompt = f"""
@@ -374,9 +410,9 @@ BULLET RULES:
 - Avoid redundant bullets that communicate essentially the same value.
 
 ENTRY ORDER RULES:
-- Stronger entries should appear before weaker entries within a section.
-- This ordering matters because Naomatch may remove later entries first
-  if the generated resume exceeds one page.
+- Rank selected entries by relevance when deciding WHAT should be selected.
+- Do not alter factual dates.
+- Final display chronology is handled deterministically after tailoring.
 
 EDUCATION RULES:
 - Education information must come directly from Education Vault data.
@@ -386,11 +422,17 @@ EDUCATION RULES:
 - Do not invent honors or courses.
 
 SKILLS RULES:
-- Only include skills actually present in the Vault or directly supported
-  by candidate evidence.
+- Only include skills actually present in the Vault.
 - Prefer skills aligned with the target job.
 - Group skills into clear categories.
-- skills_to_emphasize must contain only supported candidate skills.
+- skills_to_emphasize must contain only explicit Vault skills.
+- Coursework concepts are not automatically Technical Skills.
+
+TECHNOLOGY RULES:
+- Technologies attached to projects or entries must be supported by
+  that specific Vault entry.
+- Never copy a technology from the job description merely because it
+  would strengthen keyword matching.
 
 PRESENTATION RULES:
 - section_order must contain the section_type values actually used in
@@ -458,24 +500,35 @@ Return a TailoredResumeDocument containing:
         ) from error
 
     # -------------------------------------------------------------
-    # Validate response
+    # Parse + deterministically validate Gemini output
     # -------------------------------------------------------------
 
     tailored_resume = (
-        TailoredResumeDocument.model_validate_json(
+        TailoredResumeDocument
+        .model_validate_json(
             response.text
         )
     )
 
+    tailored_resume = (
+        validate_tailored_resume(
+            tailored_resume,
+            vault_sections,
+        )
+    )
+
     # -------------------------------------------------------------
-    # Store new cache result
+    # Cache ONLY the validated result
     # -------------------------------------------------------------
 
-    cached_record = ResumeTailorCache(
-        cache_key=cache_key,
-        tailored_resume=(
-            tailored_resume.model_dump_json()
-        ),
+    cached_record = (
+        ResumeTailorCache(
+            cache_key=cache_key,
+            tailored_resume=(
+                tailored_resume
+                .model_dump_json()
+            ),
+        )
     )
 
     db.add(

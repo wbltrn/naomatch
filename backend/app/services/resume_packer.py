@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 
 from app.schemas.resume import (
@@ -45,6 +46,41 @@ SECTION_PRIORITY = {
     "technical_skills": 90,
 }
 
+# -------------------------------------------------------------------
+# Bullet quality / redundancy configuration
+# -------------------------------------------------------------------
+
+# Short bullets are reviewed more aggressively because a very short
+# bullet next to several detailed accomplishment bullets can look like
+# filler. Shortness by itself NEVER causes deletion.
+SHORT_BULLET_WORD_LIMIT = 16
+
+# Percentage of the shorter bullet's meaningful words that must already
+# be represented in another bullet before it is considered redundant.
+REDUNDANCY_CONTAINMENT_THRESHOLD = 0.60
+
+
+BULLET_STOP_WORDS = {
+    "a",
+    "an",
+    "and",
+    "as",
+    "at",
+    "by",
+    "for",
+    "from",
+    "in",
+    "into",
+    "of",
+    "on",
+    "or",
+    "the",
+    "to",
+    "using",
+    "used",
+    "with",
+    "while",
+}
 
 @dataclass
 class PackedResume:
@@ -53,6 +89,298 @@ class PackedResume:
     content_score: float
     trimmed: bool
 
+# -------------------------------------------------------------------
+# Bullet quality / redundancy guard
+# -------------------------------------------------------------------
+
+
+def normalize_bullet_token(
+    token: str,
+) -> str:
+    """
+    Apply very lightweight normalization so words such as
+    automate / automated / automating compare more naturally.
+
+    This intentionally avoids heavy NLP dependencies.
+    """
+
+    token = token.lower().strip()
+
+    for suffix in (
+        "ing",
+        "ed",
+        "es",
+        "s",
+    ):
+        if (
+            token.endswith(suffix)
+            and len(token) - len(suffix) >= 4
+        ):
+            token = token[
+                : -len(suffix)
+            ]
+
+            break
+
+    return token
+
+
+def bullet_tokens(
+    bullet: str,
+) -> set[str]:
+    """
+    Return meaningful normalized words from a bullet.
+    """
+
+    raw_tokens = re.findall(
+        r"[A-Za-z0-9+#./-]+",
+        bullet.lower(),
+    )
+
+    normalized_tokens = set()
+
+    for token in raw_tokens:
+        if token in BULLET_STOP_WORDS:
+            continue
+
+        normalized = (
+            normalize_bullet_token(
+                token
+            )
+        )
+
+        if (
+            normalized
+            and normalized
+            not in BULLET_STOP_WORDS
+        ):
+            normalized_tokens.add(
+                normalized
+            )
+
+    return normalized_tokens
+
+
+def extract_numeric_evidence(
+    bullet: str,
+) -> set[str]:
+    """
+    Extract metrics that should strongly protect a bullet from
+    redundancy removal.
+
+    Examples:
+        70%
+        $900K
+        20M+
+        2.7x
+        800K+
+        10 years
+    """
+
+    return set(
+        re.findall(
+            r"""
+            \$?\d+(?:\.\d+)?
+            (?:K|M|B|T)?
+            \+?
+            %?
+            x?
+            """,
+            bullet,
+            flags=re.IGNORECASE
+            | re.VERBOSE,
+        )
+    )
+
+
+def bullet_containment_score(
+    candidate: str,
+    comparison: str,
+) -> float:
+    """
+    Measure how much of the candidate bullet is already represented
+    by another bullet.
+
+    Unlike Jaccard similarity, this works well when a short bullet is
+    effectively a summary of a much longer accomplishment bullet.
+    """
+
+    candidate_tokens = (
+        bullet_tokens(
+            candidate
+        )
+    )
+
+    comparison_tokens = (
+        bullet_tokens(
+            comparison
+        )
+    )
+
+    if not candidate_tokens:
+        return 0.0
+
+    overlap = (
+        candidate_tokens
+        & comparison_tokens
+    )
+
+    return (
+        len(overlap)
+        / len(candidate_tokens)
+    )
+
+
+def has_distinct_numeric_evidence(
+    candidate: str,
+    comparison: str,
+) -> bool:
+    """
+    Protect concise bullets that contribute a distinct quantitative
+    result even when their wording overlaps another bullet.
+    """
+
+    candidate_metrics = (
+        extract_numeric_evidence(
+            candidate
+        )
+    )
+
+    if not candidate_metrics:
+        return False
+
+    comparison_metrics = (
+        extract_numeric_evidence(
+            comparison
+        )
+    )
+
+    return bool(
+        candidate_metrics
+        - comparison_metrics
+    )
+
+
+def should_remove_short_redundant_bullet(
+    candidate: str,
+    stronger_bullets: list[str],
+) -> bool:
+    """
+    Remove a short bullet only when another bullet in the same entry
+    already communicates most of its substance.
+
+    Rules:
+    - long bullets are never removed by this quality guard
+    - shortness alone is never enough
+    - distinct numeric evidence protects the bullet
+    - redundancy must exceed the containment threshold
+    """
+
+    word_count = len(
+        candidate.split()
+    )
+
+    if (
+        word_count
+        > SHORT_BULLET_WORD_LIMIT
+    ):
+        return False
+
+    for stronger_bullet in stronger_bullets:
+        if has_distinct_numeric_evidence(
+            candidate,
+            stronger_bullet,
+        ):
+            continue
+
+        containment = (
+            bullet_containment_score(
+                candidate,
+                stronger_bullet,
+            )
+        )
+
+        if (
+            containment
+            >= REDUNDANCY_CONTAINMENT_THRESHOLD
+        ):
+            return True
+
+    return False
+
+
+def clean_item_bullets(
+    item: ResumeSectionItem,
+) -> int:
+    """
+    Remove redundant short bullets from one resume entry.
+
+    Earlier bullets are treated as stronger because the tailoring
+    model is instructed to rank strongest bullets first.
+
+    Returns the number of bullets removed.
+    """
+
+    if len(item.bullets) <= 1:
+        return 0
+
+    kept_bullets: list[str] = []
+    removed_count = 0
+
+    for bullet in item.bullets:
+        if (
+            kept_bullets
+            and should_remove_short_redundant_bullet(
+                bullet,
+                kept_bullets,
+            )
+        ):
+            removed_count += 1
+            continue
+
+        kept_bullets.append(
+            bullet
+        )
+
+    # Always preserve at least one bullet.
+    if not kept_bullets:
+        kept_bullets = [
+            item.bullets[0]
+        ]
+
+    item.bullets = kept_bullets
+
+    return removed_count
+
+
+def clean_resume_bullets(
+    resume: TailoredResumeDocument,
+) -> int:
+    """
+    Apply the conservative quality guard across all resume entries.
+
+    Education and Skills do not contain accomplishment bullets, so
+    they are ignored.
+    """
+
+    removed_count = 0
+
+    for section in resume.sections:
+        if section.section_type in {
+            "education",
+            "skills",
+            "technical_skills",
+        }:
+            continue
+
+        for item in section.items:
+            removed_count += (
+                clean_item_bullets(
+                    item
+                )
+            )
+
+    return removed_count
 
 # -------------------------------------------------------------------
 # Density estimation
@@ -412,13 +740,27 @@ def pack_tailored_resume(
         )
     )
 
+    # ---------------------------------------------------------------
+    # Quality pass:
+    # Remove short bullets that merely repeat stronger evidence before
+    # calculating page density.
+    # ---------------------------------------------------------------
+
+    quality_removed = (
+        clean_resume_bullets(
+            packed_resume
+        )
+    )
+
     content_score = (
         estimate_resume_content(
             packed_resume
         )
     )
 
-    trimmed = False
+    trimmed = (
+        quality_removed > 0
+    )
 
     # ---------------------------------------------------------------
     # First pass:
@@ -690,5 +1032,9 @@ def build_resume_with_alternate(
 
     if not promoted:
         return None
+
+    clean_resume_bullets(
+        candidate_resume
+    )
 
     return candidate_resume

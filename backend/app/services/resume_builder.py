@@ -11,6 +11,41 @@ from app.services.resume_layout import (
 )
 
 
+CHRONOLOGICAL_SECTION_TYPES = {
+    "experience",
+    "project",
+    "projects",
+    "research",
+    "leadership",
+    "volunteer",
+    "certifications",
+    "awards",
+}
+
+
+def parse_resume_date(
+    value: str | None,
+) -> datetime | None:
+    """
+    Parse ISO-style Vault dates for sorting.
+
+    If the value is missing or already human-readable, return None so
+    the original order can be preserved as a fallback.
+    """
+
+    if not value:
+        return None
+
+    try:
+        return datetime.strptime(
+            value,
+            "%Y-%m-%d",
+        )
+
+    except ValueError:
+        return None
+
+
 def format_resume_date(
     value: str | None,
 ) -> str | None:
@@ -31,6 +66,121 @@ def format_resume_date(
 
     except ValueError:
         return value
+
+
+def chronological_sort_key(
+    item,
+    original_index: int,
+) -> tuple:
+    """
+    Sort resume items in reverse chronological order.
+
+    Priority:
+    1. Current entries first.
+    2. Current entries with newer start dates first.
+    3. Completed entries with newer end dates first.
+    4. If end dates tie, newer start dates first.
+    5. Undated entries remain at the bottom in their original order.
+    """
+
+    start_date = parse_resume_date(
+        item.start_date
+    )
+
+    end_date = parse_resume_date(
+        item.end_date
+    )
+
+    is_current = (
+        start_date is not None
+        and item.end_date is None
+    )
+
+    has_date = (
+        start_date is not None
+        or end_date is not None
+    )
+
+    if is_current:
+        return (
+            0,
+            -(
+                start_date.timestamp()
+                if start_date
+                else 0
+            ),
+            original_index,
+        )
+
+    if has_date:
+        effective_end = (
+            end_date
+            or start_date
+        )
+
+        return (
+            1,
+            -(
+                effective_end.timestamp()
+                if effective_end
+                else 0
+            ),
+            -(
+                start_date.timestamp()
+                if start_date
+                else 0
+            ),
+            original_index,
+        )
+
+    return (
+        2,
+        0,
+        0,
+        original_index,
+    )
+
+
+def sort_section_items(
+    section,
+):
+    """
+    Reverse-chronologically sort only resume sections where chronology
+    is expected.
+
+    Education and Technical Skills intentionally preserve the order
+    produced by the tailoring system.
+    """
+
+    if (
+        section.section_type
+        not in CHRONOLOGICAL_SECTION_TYPES
+    ):
+        return list(
+            section.items
+        )
+
+    indexed_items = list(
+        enumerate(
+            section.items
+        )
+    )
+
+    sorted_items = sorted(
+        indexed_items,
+        key=lambda pair: (
+            chronological_sort_key(
+                pair[1],
+                pair[0],
+            )
+        ),
+    )
+
+    return [
+        item
+        for _, item
+        in sorted_items
+    ]
 
 
 def build_project_date(
@@ -161,7 +311,11 @@ def build_resume_render_data(
                     item,
                     section.section_type,
                 )
-                for item in section.items
+                for item in (
+                    sort_section_items(
+                        section
+                    )
+                )
             ],
         }
         for section
