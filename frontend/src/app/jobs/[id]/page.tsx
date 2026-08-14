@@ -4,7 +4,14 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
-import { getJob, tailorResume, type TailoredResumeResponse } from "@/lib/api";
+import {
+  getJob,
+  getProfile,
+  previewTailoredResume,
+  type OptimizedResumePreviewResponse,
+  type ProfileData,
+  type TailoredResumeResponse,
+} from "@/lib/api";
 
 type Job = {
   id: number;
@@ -23,6 +30,8 @@ export default function JobDetailPage() {
 
   const [job, setJob] = useState<Job | null>(null);
 
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+
   const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +42,9 @@ export default function JobDetailPage() {
 
   const [tailoredResume, setTailoredResume] =
     useState<TailoredResumeResponse | null>(null);
+
+  const [previewMetrics, setPreviewMetrics] =
+    useState<OptimizedResumePreviewResponse | null>(null);
 
   useEffect(() => {
     async function loadJob() {
@@ -48,9 +60,13 @@ export default function JobDetailPage() {
         setLoading(true);
         setError(null);
 
-        const data = await getJob(jobId);
+        const [jobData, profileData] = await Promise.all([
+          getJob(jobId),
+          getProfile(),
+        ]);
 
-        setJob(data);
+        setJob(jobData);
+        setProfile(profileData);
       } catch (err) {
         console.error(err);
 
@@ -68,10 +84,12 @@ export default function JobDetailPage() {
       setTailoring(true);
       setTailorError(null);
       setTailoredResume(null);
+      setPreviewMetrics(null);
 
-      const data = await tailorResume(jobId);
+      const data = await previewTailoredResume(jobId);
 
-      setTailoredResume(data);
+      setTailoredResume(data.resume);
+      setPreviewMetrics(data);
     } catch (err) {
       console.error(err);
 
@@ -94,6 +112,29 @@ export default function JobDetailPage() {
       month: "short",
       year: "numeric",
     });
+  }
+
+  function formatResumeDateRange(
+    startDate?: string | null,
+    endDate?: string | null,
+  ) {
+    if (!startDate) {
+      return "";
+    }
+
+    const start = formatResumeDate(startDate);
+
+    if (!endDate) {
+      return `${start} – Present`;
+    }
+
+    const end = formatResumeDate(endDate);
+
+    if (start === end) {
+      return start;
+    }
+
+    return `${start} – ${end}`;
   }
 
   return (
@@ -174,20 +215,82 @@ export default function JobDetailPage() {
                   <p className="mt-1 text-sm text-gray-500">
                     Generated from your vault for {job.company} · {job.title}
                   </p>
+                  {previewMetrics && (
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-600">
+                      <span className="rounded-full bg-gray-100 px-2.5 py-1">
+                        1-page optimized
+                      </span>
+
+                      <span className="rounded-full bg-gray-100 px-2.5 py-1">
+                        {previewMetrics.layout_profile} layout
+                      </span>
+
+                      <span className="rounded-full bg-gray-100 px-2.5 py-1">
+                        {Math.round(previewMetrics.fill_ratio * 100)}% page
+                        utilization
+                      </span>
+
+                      {previewMetrics.trimmed && (
+                        <span className="rounded-full bg-gray-100 px-2.5 py-1">
+                          Content fitted automatically
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                <div className="mx-auto max-w-[850px] border border-gray-300 bg-white px-10 py-10 shadow-sm">
+                <div className="mx-auto max-w-[850px] border border-gray-300 bg-white px-8 py-8 shadow-sm">
+                  {profile && (
+                    <header className="mb-5 text-center">
+                      <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                        {profile.name}
+                      </h1>
+
+                      <div className="mt-1 flex flex-wrap justify-center gap-x-2 text-xs text-gray-700">
+                        {profile.phone && <span>{profile.phone}</span>}
+
+                        {profile.phone && profile.email && <span>•</span>}
+
+                        {profile.email && (
+                          <a
+                            href={`mailto:${profile.email}`}
+                            className="hover:underline"
+                          >
+                            {profile.email}
+                          </a>
+                        )}
+
+                        {profile.links.map((link) => (
+                          <span
+                            key={`${link.label}-${link.url}`}
+                            className="flex gap-x-2"
+                          >
+                            <span>•</span>
+
+                            <a
+                              href={link.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="hover:underline"
+                            >
+                              {link.label}
+                            </a>
+                          </span>
+                        ))}
+                      </div>
+                    </header>
+                  )}
                   {tailoredResume.sections.map((section) => (
                     <section
                       key={section.section_type}
-                      className="mb-7 last:mb-0"
+                      className="mb-5 last:mb-0"
                     >
                       <h3 className="border-b border-gray-900 pb-1 text-sm font-bold uppercase tracking-wide text-gray-900">
                         {section.title}
                       </h3>
 
                       {section.section_type === "education" && (
-                        <div className="mt-3 space-y-4">
+                        <div className="mt-2 space-y-3">
                           {section.items.map((item) => (
                             <div key={item.id}>
                               <div className="flex items-start justify-between gap-4">
@@ -241,7 +344,7 @@ export default function JobDetailPage() {
                       )}
 
                       {section.section_type === "skills" && (
-                        <div className="mt-3 space-y-1">
+                        <div className="mt-2 space-y-0.5">
                           {section.items.map((item) => (
                             <p
                               key={item.category}
@@ -258,7 +361,7 @@ export default function JobDetailPage() {
 
                       {section.section_type !== "education" &&
                         section.section_type !== "skills" && (
-                          <div className="mt-3 space-y-5">
+                          <div className="mt-2 space-y-4">
                             {section.items.map((item) => (
                               <div key={item.id}>
                                 <div className="flex items-start justify-between gap-4">
@@ -279,9 +382,10 @@ export default function JobDetailPage() {
 
                                     {item.start_date && (
                                       <p>
-                                        {formatResumeDate(item.start_date)}
-                                        {" – "}
-                                        {formatResumeDate(item.end_date)}
+                                        {formatResumeDateRange(
+                                          item.start_date,
+                                          item.end_date,
+                                        )}
                                       </p>
                                     )}
                                   </div>

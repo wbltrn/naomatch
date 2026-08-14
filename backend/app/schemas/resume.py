@@ -72,3 +72,11 @@ class TailoredResumeDocument(BaseModel):
 
     # Ranked strongest-first.
     alternate_items: list[ResumeAlternate] = []
+
+class OptimizedResumePreview(BaseModel):
+    resume: TailoredResumeDocument
+    layout_profile: str
+    page_count: int
+    fill_ratio: float
+    trimmed: bool
+    alternate_attempts: int

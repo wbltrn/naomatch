@@ -10,6 +10,7 @@ from app.database import SessionLocal
 from app.models.job import JobPosting
 from app.models.profile import UserProfile
 from app.schemas.resume import (
+    OptimizedResumePreview,
     TailoredResumeDocument,
 )
 from app.services.resume_builder import (
@@ -35,6 +36,10 @@ from app.services.resume_tailor import (
 )
 from app.services.resume_vault_context import (
     build_resume_vault_sections,
+)
+
+from app.services.resume_optimizer import (
+    optimize_resume_for_one_page,
 )
 
 
@@ -213,6 +218,97 @@ def tailor_resume_for_job(
             detail=str(error),
         ) from error
 
+@router.post(
+    "/job/{job_id}/preview",
+    response_model=OptimizedResumePreview,
+    response_model_exclude_none=True,
+    response_model_exclude_defaults=True,
+)
+def preview_resume_for_job(
+    job_id: int,
+    db: Session = Depends(get_db),
+):
+    job = get_job_or_404(
+        db,
+        job_id,
+    )
+
+    profile = (
+        db.query(UserProfile)
+        .first()
+    )
+
+    if profile is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User profile not found",
+        )
+
+    vault_sections = (
+        build_resume_vault_sections(
+            db
+        )
+    )
+
+    optimized = None
+
+    try:
+        tailored_resume = (
+            tailor_resume_content(
+                db=db,
+                job_title=job.title,
+                job_description=(
+                    job.description
+                ),
+                vault_sections=(
+                    vault_sections
+                ),
+            )
+        )
+
+        optimized = (
+            optimize_resume_for_one_page(
+                profile=profile,
+                tailored_resume=(
+                    tailored_resume
+                ),
+            )
+        )
+
+        return OptimizedResumePreview(
+            resume=optimized.resume,
+            layout_profile=(
+                optimized.layout_profile
+            ),
+            page_count=(
+                optimized.metrics.page_count
+            ),
+            fill_ratio=(
+                optimized.metrics.fill_ratio
+            ),
+            trimmed=optimized.trimmed,
+            alternate_attempts=(
+                optimized.alternate_attempts
+            ),
+        )
+
+    except ResumeTailoringUnavailableError as error:
+        raise HTTPException(
+            status_code=503,
+            detail=str(error),
+        ) from error
+
+    except ResumePDFGenerationError as error:
+        raise HTTPException(
+            status_code=500,
+            detail=str(error),
+        ) from error
+
+    finally:
+        if optimized is not None:
+            delete_generated_pdf(
+                optimized.pdf_path
+            )
 
 @router.post(
     "/job/{job_id}/pdf",

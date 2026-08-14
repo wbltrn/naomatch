@@ -782,6 +782,15 @@ export type TailoredResumeResponse = {
   alternate_items: TailoredAlternateItem[];
 };
 
+export type OptimizedResumePreviewResponse = {
+  resume: TailoredResumeResponse;
+  layout_profile: "spacious" | "balanced" | "compact";
+  page_count: number;
+  fill_ratio: number;
+  trimmed: boolean;
+  alternate_attempts: number;
+};
+
 export async function tailorResume(
   jobId: number
 ): Promise<TailoredResumeResponse> {
@@ -800,6 +809,30 @@ export async function tailorResume(
     throw new Error(
       errorData?.detail
         || "Failed to tailor resume"
+    );
+  }
+
+  return response.json();
+}
+
+export async function previewTailoredResume(
+  jobId: number
+): Promise<OptimizedResumePreviewResponse> {
+  const response = await fetch(
+    `${API_URL}/resume-tailor/job/${jobId}/preview`,
+    {
+      method: "POST",
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response
+      .json()
+      .catch(() => null);
+
+    throw new Error(
+      errorData?.detail
+        || "Failed to optimize resume preview"
     );
   }
 
