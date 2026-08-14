@@ -11,6 +11,9 @@ class TailoredBullet(BaseModel):
 class ResumeSectionItem(BaseModel):
     id: int | None = None
 
+    # Source traceability
+    source_section_type: str | None = None
+
     # Common entry fields
     title: str | None = None
     organization: str | None = None
@@ -22,10 +25,12 @@ class ResumeSectionItem(BaseModel):
     # Education-specific fields
     school: str | None = None
     degree: str | None = None
+    field_of_study: str | None = None
     minor: str | None = None
     gpa: str | None = None
     graduation_date: str | None = None
     coursework: list[str] = []
+    honors: list[str] = []
 
     # Project-specific fields
     name: str | None = None
@@ -46,7 +51,24 @@ class ResumeSection(BaseModel):
     items: list[ResumeSectionItem]
 
 
+class ResumeAlternate(BaseModel):
+    """
+    Strong candidate evidence that did not make the initial resume
+    but may be promoted if the rendered page has room.
+
+    Alternates must be returned strongest-first.
+    """
+
+    section_type: str
+    section_title: str
+    item: ResumeSectionItem
+    reason: str
+
+
 class TailoredResumeDocument(BaseModel):
     section_order: list[str]
     sections: list[ResumeSection]
     skills_to_emphasize: list[str]
+
+    # Ranked strongest-first.
+    alternate_items: list[ResumeAlternate] = []

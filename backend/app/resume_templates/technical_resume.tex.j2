@@ -52,8 +52,12 @@
 
 %----------SECTION FORMATTING----------
 \titleformat{\section}{
-\vspace{-10pt}\scshape\raggedright\large
-}{}{0em}{}[\color{black}\titlerule \vspace{-7pt}]
+\vspace{ {{ layout.section_before }}pt }
+\scshape\raggedright\large
+}{}{0em}{}[
+\color{black}\titlerule
+\vspace{ {{ layout.section_after_rule }}pt }
+]
 
 % Ensure generated PDF is machine-readable and ATS-parsable
 \pdfgentounicode=1
@@ -65,23 +69,25 @@
 
 \newcommand{\resumeItem}[1]{
 \item\small{
-{#1 \vspace{-2pt}}
+{#1 \vspace{ {{ layout.bullet_after }}pt }}
 }
 }
 
 \newcommand{\resumeSubheading}[4]{
-\vspace{-4pt}\item
+\vspace{ {{ layout.subheading_before }}pt }\item
 \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
 \textbf{#1} & #2 \\
 \textit{\small #3} & \textit{\small #4} \\
-\end{tabular*}\vspace{-10pt}
+\end{tabular*}
+\vspace{ {{ layout.subheading_after }}pt }
 }
 
 \newcommand{\resumeProjectHeading}[2]{
 \item
 \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
 \small #1 & #2 \\
-\end{tabular*}\vspace{-7pt}
+\end{tabular*}
+\vspace{ {{ layout.project_after }}pt }
 }
 
 \renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
@@ -99,7 +105,8 @@
 }
 
 \newcommand{\resumeItemListEnd}{
-\end{itemize}\vspace{-5pt}
+\end{itemize}
+\vspace{ {{ layout.bullet_list_after }}pt }
 }
 
 
@@ -163,8 +170,11 @@
 { {{ item.get("location", "") | latex }} }
 {
     {{ item.get("degree", "") | latex }}
+    {% if item.get("field_of_study") %}
+    in {{ item.get("field_of_study") | latex }}
+    {% endif %}
     {% if item.get("minor") %}
-    , {{ item.get("minor") | latex }}
+    , Minor in {{ item.get("minor") | latex }}
     {% endif %}
     {% if item.get("gpa") %}
     ; GPA: {{ item.get("gpa") | latex }}
@@ -178,6 +188,17 @@
 \resumeItem{
 \textbf{Coursework:}
 {{ item.get("coursework") | map("latex") | join(", ") }}
+}
+
+\resumeItemListEnd
+{% endif %}
+
+{% if item.get("honors") %}
+\resumeItemListStart
+
+\resumeItem{
+\textbf{Honors:}
+{{ item.get("honors") | map("latex") | join(", ") }}
 }
 
 \resumeItemListEnd
@@ -202,16 +223,30 @@
 
 \resumeProjectHeading
 {
-    \textbf{ {{ item.get("name", item.get("title", "")) | latex }} }
+    \textbf{
+        {{
+            item.get(
+                "name",
+                item.get("title", "")
+            )
+            | latex
+        }}
+    }
 
     {% if item.get("technologies") %}
     $|$
     \emph{
-        {{ item.get("technologies") | map("latex") | join(", ") }}
+        {{
+            item.get("technologies")
+            | map("latex")
+            | join(", ")
+        }}
     }
     {% endif %}
 }
-{ {{ item.get("date", "") | latex }} }
+{
+    {{ item.get("date", "") | latex }}
+}
 
 {% if item.get("bullets") %}
 \resumeItemListStart
@@ -240,34 +275,29 @@
 
 \vspace{-2pt}
 
-\begin{itemize}[leftmargin=0.12in, label={}, itemsep=0pt, topsep=0pt]
-
-\footnotesize{
-
-\item{
+\begin{itemize}[
+leftmargin=0.12in,
+label={},
+itemsep={{ layout.skills_item_sep }}pt,
+topsep={{ layout.skills_top_sep }}pt
+]
 
 {% for item in section.get("items", []) %}
 
 {% if item.get("category") and item.get("skills") %}
 
+\item \footnotesize{
 \textbf{ {{ item.get("category") | latex }}: }
 {{ item.get("skills") | map("latex") | join(", ") }}
-
-{% if not loop.last %}
-\\
-{% endif %}
+}
 
 {% endif %}
 
 {% endfor %}
 
-}
-
-}
-
 \end{itemize}
 
-\vspace{-8pt}
+\vspace{ {{ layout.skills_after }}pt }
 
 
 %-------------------------------------------
@@ -276,11 +306,11 @@
 % Handles:
 % Experience
 % Research
-% Clinical Experience
-% Leadership & Involvement
-% Extracurriculars
+% Leadership & Activities
+% Volunteer Experience
+% Certifications
+% Awards & Honors
 % Teaching
-% Volunteering
 % Engineering Teams
 % etc.
 %-------------------------------------------
@@ -300,12 +330,14 @@
     {{ item.get("start_date") | latex }}
     {% endif %}
 
-    {% if item.get("start_date") and item.get("end_date") %}
+    {% if item.get("start_date") %}
     --
     {% endif %}
 
     {% if item.get("end_date") %}
     {{ item.get("end_date") | latex }}
+    {% elif item.get("start_date") %}
+    Present
     {% endif %}
 }
 { {{ item.get("organization", "") | latex }} }
