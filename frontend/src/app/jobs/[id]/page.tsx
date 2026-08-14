@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
-import { getJob } from "@/lib/api";
+import { getJob, tailorResume, type TailoredResumeResponse } from "@/lib/api";
 
 type Job = {
   id: number;
@@ -26,6 +26,13 @@ export default function JobDetailPage() {
   const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState<string | null>(null);
+
+  const [tailorError, setTailorError] = useState<string | null>(null);
+
+  const [tailoring, setTailoring] = useState(false);
+
+  const [tailoredResume, setTailoredResume] =
+    useState<TailoredResumeResponse | null>(null);
 
   useEffect(() => {
     async function loadJob() {
@@ -55,6 +62,39 @@ export default function JobDetailPage() {
 
     loadJob();
   }, [jobId]);
+
+  async function handleTailorResume() {
+    try {
+      setTailoring(true);
+      setTailorError(null);
+      setTailoredResume(null);
+
+      const data = await tailorResume(jobId);
+
+      setTailoredResume(data);
+    } catch (err) {
+      console.error(err);
+
+      setTailorError(
+        err instanceof Error ? err.message : "Unable to tailor resume.",
+      );
+    } finally {
+      setTailoring(false);
+    }
+  }
+
+  function formatResumeDate(date?: string | null) {
+    if (!date) {
+      return "Present";
+    }
+
+    const parsedDate = new Date(`${date}T00:00:00`);
+
+    return parsedDate.toLocaleDateString("en-US", {
+      month: "short",
+      year: "numeric",
+    });
+  }
 
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-10">
@@ -94,28 +134,175 @@ export default function JobDetailPage() {
                   )}
                 </div>
 
-                {job.job_url && (
-                  <a
-                    href={job.job_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={handleTailorResume}
+                    disabled={tailoring}
+                    className="inline-flex rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Original Posting ↗
-                  </a>
-                )}
+                    {tailoring ? "Tailoring..." : "Tailor Resume"}
+                  </button>
+
+                  {job.job_url && (
+                    <a
+                      href={job.job_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                    >
+                      Original Posting ↗
+                    </a>
+                  )}
+                </div>
               </div>
             </section>
 
-            <section className="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Job Description
-              </h2>
-
-              <div className="mt-5 whitespace-pre-wrap text-sm leading-7 text-gray-700">
-                {job.description}
+            {tailorError && (
+              <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                {tailorError}
               </div>
-            </section>
+            )}
+
+            {tailoredResume !== null && (
+              <section className="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Tailored Resume
+                  </h2>
+
+                  <p className="mt-1 text-sm text-gray-500">
+                    Generated from your vault for {job.company} · {job.title}
+                  </p>
+                </div>
+
+                <div className="mx-auto max-w-[850px] border border-gray-300 bg-white px-10 py-10 shadow-sm">
+                  {tailoredResume.sections.map((section) => (
+                    <section
+                      key={section.section_type}
+                      className="mb-7 last:mb-0"
+                    >
+                      <h3 className="border-b border-gray-900 pb-1 text-sm font-bold uppercase tracking-wide text-gray-900">
+                        {section.title}
+                      </h3>
+
+                      {section.section_type === "education" && (
+                        <div className="mt-3 space-y-4">
+                          {section.items.map((item) => (
+                            <div key={item.id}>
+                              <div className="flex items-start justify-between gap-4">
+                                <div>
+                                  <p className="font-semibold text-gray-900">
+                                    {item.school}
+                                  </p>
+
+                                  <p className="text-sm text-gray-700">
+                                    {item.degree}
+                                    {item.field_of_study
+                                      ? ` in ${item.field_of_study}`
+                                      : ""}
+                                    {item.minor
+                                      ? `, Minor in ${item.minor}`
+                                      : ""}
+                                  </p>
+                                </div>
+
+                                <div className="shrink-0 text-right text-sm text-gray-600">
+                                  {item.location && <p>{item.location}</p>}
+
+                                  {item.graduation_date && (
+                                    <p>
+                                      Expected{" "}
+                                      {formatResumeDate(item.graduation_date)}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {item.gpa && (
+                                <p className="mt-1 text-sm text-gray-700">
+                                  <span className="font-medium">GPA:</span>{" "}
+                                  {item.gpa}
+                                </p>
+                              )}
+
+                              {item.coursework &&
+                                item.coursework.length > 0 && (
+                                  <p className="mt-1 text-sm text-gray-700">
+                                    <span className="font-medium">
+                                      Relevant Coursework:
+                                    </span>{" "}
+                                    {item.coursework.join(", ")}
+                                  </p>
+                                )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {section.section_type === "skills" && (
+                        <div className="mt-3 space-y-1">
+                          {section.items.map((item) => (
+                            <p
+                              key={item.category}
+                              className="text-sm text-gray-700"
+                            >
+                              <span className="font-semibold text-gray-900">
+                                {item.category}:
+                              </span>{" "}
+                              {item.skills.join(", ")}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+
+                      {section.section_type !== "education" &&
+                        section.section_type !== "skills" && (
+                          <div className="mt-3 space-y-5">
+                            {section.items.map((item) => (
+                              <div key={item.id}>
+                                <div className="flex items-start justify-between gap-4">
+                                  <div>
+                                    <p className="font-semibold text-gray-900">
+                                      {item.title}
+                                    </p>
+
+                                    {item.organization && (
+                                      <p className="text-sm font-medium text-gray-700">
+                                        {item.organization}
+                                      </p>
+                                    )}
+                                  </div>
+
+                                  <div className="shrink-0 text-right text-sm text-gray-600">
+                                    {item.location && <p>{item.location}</p>}
+
+                                    {item.start_date && (
+                                      <p>
+                                        {formatResumeDate(item.start_date)}
+                                        {" – "}
+                                        {formatResumeDate(item.end_date)}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {item.bullets && item.bullets.length > 0 && (
+                                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-5 text-gray-700">
+                                    {item.bullets.map((bullet, index) => (
+                                      <li key={index}>{bullet}</li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                    </section>
+                  ))}
+                </div>
+              </section>
+            )}
           </>
         )}
       </div>

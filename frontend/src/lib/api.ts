@@ -721,9 +721,70 @@ export async function deleteSkill(
   return response.json();
 }
 
+export type TailoredEducationItem = {
+  id: number;
+  source_section_type: "education";
+  school: string;
+  degree?: string | null;
+  field_of_study?: string | null;
+  minor?: string | null;
+  location?: string | null;
+  gpa?: string | null;
+  graduation_date?: string | null;
+  coursework?: string[];
+};
+
+export type TailoredResumeItem = {
+  id: number;
+  source_section_type: string;
+  title: string;
+  organization?: string | null;
+  location?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  description?: string | null;
+  bullets?: string[];
+};
+
+export type TailoredSkillGroup = {
+  category: string;
+  skills: string[];
+};
+
+export type TailoredResumeSection =
+  | {
+      section_type: "education";
+      title: string;
+      items: TailoredEducationItem[];
+    }
+  | {
+      section_type: "skills";
+      title: string;
+      items: TailoredSkillGroup[];
+    }
+  | {
+      section_type: "experience" | "projects" | "leadership";
+      title: string;
+      items: TailoredResumeItem[];
+    };
+
+export type TailoredAlternateItem = {
+  section_type: string;
+  section_title: string;
+  item: TailoredResumeItem;
+  reason: string;
+};
+
+export type TailoredResumeResponse = {
+  section_order: string[];
+  sections: TailoredResumeSection[];
+  skills_to_emphasize: string[];
+  alternate_items: TailoredAlternateItem[];
+};
+
 export async function tailorResume(
   jobId: number
-) {
+): Promise<TailoredResumeResponse> {
   const response = await fetch(
     `${API_URL}/resume-tailor/job/${jobId}`,
     {
