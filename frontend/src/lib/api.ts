@@ -351,3 +351,82 @@ export async function confirmResumeImport(
 
   return response.json();
 }
+
+export type VaultEducation = {
+  id: number;
+  school: string;
+  degree?: string | null;
+  field_of_study?: string | null;
+  minor?: string | null;
+  location?: string | null;
+  start_date?: string | null;
+  graduation_date?: string | null;
+  gpa?: string | null;
+  coursework?: string | null;
+  honors?: string | null;
+};
+
+export type VaultBullet = {
+  id: number;
+  bullet_text: string;
+};
+
+export type VaultExperience = {
+  id: number;
+  title: string;
+  organization?: string | null;
+  location?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  description?: string | null;
+  bullets: VaultBullet[];
+};
+
+export type VaultExperienceSection = {
+  section_type: string;
+  items: VaultExperience[];
+};
+
+export type VaultSkill = {
+  id: number;
+  category?: string | null;
+  name: string;
+};
+
+export type VaultData = {
+  education: VaultEducation[];
+  experience_sections: VaultExperienceSection[];
+  skills: VaultSkill[];
+};
+
+export type ProfileLink = {
+  label: string;
+  url: string;
+};
+
+export type ProfileData = {
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  links: ProfileLink[];
+};
+
+export async function getVault(): Promise<VaultData> {
+  const response = await fetch(`${API_URL}/vault`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch vault");
+  }
+
+  return response.json();
+}
+
+export async function getProfile(): Promise<ProfileData> {
+  const response = await fetch(`${API_URL}/profile`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch profile");
+  }
+
+  return response.json();
+}

@@ -820,6 +820,13 @@ export default function Home() {
     <main className="p-8">
       <h1 className="text-3xl font-bold">Naomatch</h1>
 
+      <a
+        href="/vault"
+        className="mt-4 inline-block rounded border px-4 py-2 text-sm font-medium"
+      >
+        Open Experience Vault
+      </a>
+
       <div className="mt-8">
         <ResumeImport />
       </div>
