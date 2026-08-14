@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
 import {
+  downloadTailoredResumePdf,
   getJob,
   getProfile,
   previewTailoredResume,
@@ -39,6 +40,8 @@ export default function JobDetailPage() {
   const [tailorError, setTailorError] = useState<string | null>(null);
 
   const [tailoring, setTailoring] = useState(false);
+
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const [tailoredResume, setTailoredResume] =
     useState<TailoredResumeResponse | null>(null);
@@ -98,6 +101,42 @@ export default function JobDetailPage() {
       );
     } finally {
       setTailoring(false);
+    }
+  }
+
+  async function handleDownloadPdf() {
+    try {
+      setDownloadingPdf(true);
+      setTailorError(null);
+
+      const pdfBlob = await downloadTailoredResumePdf(jobId);
+
+      const url = URL.createObjectURL(pdfBlob);
+
+      const link = document.createElement("a");
+
+      link.href = url;
+
+      link.download =
+        `${job?.company ?? "tailored"}-${job?.title ?? "resume"}-resume.pdf`
+          .replace(/\s+/g, "-")
+          .toLowerCase();
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      link.remove();
+
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+
+      setTailorError(
+        err instanceof Error ? err.message : "Unable to download resume PDF.",
+      );
+    } finally {
+      setDownloadingPdf(false);
     }
   }
 
@@ -208,13 +247,28 @@ export default function JobDetailPage() {
             {tailoredResume !== null && (
               <section className="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                 <div className="mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Tailored Resume
-                  </h2>
+                  <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-900">
+                        Tailored Resume
+                      </h2>
 
-                  <p className="mt-1 text-sm text-gray-500">
-                    Generated from your vault for {job.company} · {job.title}
-                  </p>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Generated from your vault for {job.company} ·{" "}
+                        {job.title}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleDownloadPdf}
+                      disabled={downloadingPdf}
+                      className="inline-flex shrink-0 items-center justify-center rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {downloadingPdf ? "Generating PDF..." : "Download PDF"}
+                    </button>
+                  </div>
+
                   {previewMetrics && (
                     <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-600">
                       <span className="rounded-full bg-gray-100 px-2.5 py-1">
@@ -280,6 +334,7 @@ export default function JobDetailPage() {
                       </div>
                     </header>
                   )}
+
                   {tailoredResume.sections.map((section) => (
                     <section
                       key={section.section_type}
@@ -301,9 +356,11 @@ export default function JobDetailPage() {
 
                                   <p className="text-sm text-gray-700">
                                     {item.degree}
+
                                     {item.field_of_study
                                       ? ` in ${item.field_of_study}`
                                       : ""}
+
                                     {item.minor
                                       ? `, Minor in ${item.minor}`
                                       : ""}

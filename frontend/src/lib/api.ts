@@ -838,3 +838,27 @@ export async function previewTailoredResume(
 
   return response.json();
 }
+
+export async function downloadTailoredResumePdf(
+  jobId: number
+): Promise<Blob> {
+  const response = await fetch(
+    `${API_URL}/resume-tailor/job/${jobId}/pdf`,
+    {
+      method: "POST",
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response
+      .json()
+      .catch(() => null);
+
+    throw new Error(
+      errorData?.detail
+        || "Failed to generate resume PDF"
+    );
+  }
+
+  return response.blob();
+}
