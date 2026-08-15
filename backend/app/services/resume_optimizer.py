@@ -24,8 +24,6 @@ from app.services.resume_renderer import (
     render_resume_latex,
 )
 
-
-UNDERFILLED_THRESHOLD = 0.92
 TARGET_FILL_RATIO = 0.95
 MAX_ALTERNATE_ATTEMPTS = 10
 
@@ -364,12 +362,6 @@ def optimize_resume_for_one_page(
         if (
             accepted_metrics.fill_ratio
             >= TARGET_FILL_RATIO
-        ):
-            break
-
-        if (
-            accepted_metrics.fill_ratio
-            >= UNDERFILLED_THRESHOLD
         ):
             break
 

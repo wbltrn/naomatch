@@ -5,6 +5,24 @@ from pathlib import Path
 
 from pypdf import PdfReader
 
+# -------------------------------------------------------------
+# Resume page geometry
+# -------------------------------------------------------------
+
+# PDF points per inch.
+PDF_POINTS_PER_INCH = 72.0
+
+# technical_resume.tex.j2 uses a Letter page and expands the
+# standard fullpage text area to approximately 10 vertical inches.
+#
+# fill_ratio should describe utilization of this usable resume area,
+# not utilization of the entire 11-inch physical sheet.
+USABLE_RESUME_HEIGHT_INCHES = 10.0
+USABLE_RESUME_HEIGHT = (
+    USABLE_RESUME_HEIGHT_INCHES
+    * PDF_POINTS_PER_INCH
+)
+
 
 class ResumePDFGenerationError(
     Exception
@@ -185,9 +203,15 @@ def get_pdf_metrics(
             0.0,
         )
 
-        fill_ratio = (
+        usable_height = min(
+            USABLE_RESUME_HEIGHT,
+            page_height,
+        )
+
+        fill_ratio = min(
             content_height
-            / page_height
+            / usable_height,
+            1.0,
         )
 
         return ResumePDFMetrics(
