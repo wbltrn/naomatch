@@ -1,6 +1,5 @@
 %-------------------------
 % Naomatch Dynamic Resume Template
-% Based on Wili Eduardo Beltran Salinas resume format
 %-------------------------
 
 \documentclass[letterpaper,11pt]{article}
@@ -17,17 +16,6 @@
 \usepackage[english]{babel}
 \usepackage{tabularx}
 \input{glyphtounicode}
-
-%----------FONT OPTIONS----------
-% Sans-serif
-% \usepackage[sfdefault]{FiraSans}
-% \usepackage[sfdefault]{roboto}
-% \usepackage[sfdefault]{noto-sans}
-% \usepackage[default]{sourcesanspro}
-
-% Serif
-% \usepackage{CormorantGaramond}
-% \usepackage{charter}
 
 \pagestyle{fancy}
 \fancyhf{}
@@ -59,7 +47,7 @@
 \vspace{ {{ layout.section_after_rule }}pt }
 ]
 
-% Ensure generated PDF is machine-readable and ATS-parsable
+% ATS-readable Unicode mapping
 \pdfgentounicode=1
 
 
@@ -76,7 +64,7 @@
 \newcommand{\resumeSubheading}[4]{
 \vspace{ {{ layout.subheading_before }}pt }\item
 \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
-\textbf{#1} & #2 \\
+\textbf{#1} & \small #2 \\
 \textit{\small #3} & \textit{\small #4} \\
 \end{tabular*}
 \vspace{ {{ layout.subheading_after }}pt }
@@ -85,7 +73,7 @@
 \newcommand{\resumeProjectHeading}[2]{
 \item
 \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
-\small #1 & #2 \\
+\small #1 & \small #2 \\
 \end{tabular*}
 \vspace{ {{ layout.project_after }}pt }
 }
@@ -102,6 +90,7 @@
 
 \newcommand{\resumeItemListStart}{
 \begin{itemize}[
+leftmargin=0.20in,
 itemsep={{ layout.bullet_after }}pt,
 topsep=3pt,
 parsep=0pt,
@@ -125,19 +114,20 @@ partopsep=0pt
 %----------HEADING----------
 
 \begin{center}
-\textbf{\Huge \scshape {{ contact.name | latex }}} \ \vspace{1pt}
+\textbf{\Huge \scshape {{ contact.name | latex }}}\\[-1pt]
 
 \small
 {%- if contact.get("phone") -%}
 {{ contact.get("phone") | latex }}
 {%- endif -%}
-{%- if contact.get("email") -%}
-{%- if contact.get("phone") %} $|$ {% endif -%}
+
+{% if contact.get("email") %}
+{% if contact.get("phone") %} $|$ {% endif %}
 \href{mailto:{{ contact.get("email") }}}{{ contact.get("email") | latex }}
-{%- endif -%}
-{%- for link in contact.get("links", []) -%}
+{% endif %}
+{% for link in contact.get("links", []) %}
  $|$ \href{ {{ link.url }} }{ {{ link.label | latex }} }
-{%- endfor %}
+{% endfor %}
 \end{center}
 
 
@@ -170,28 +160,31 @@ partopsep=0pt
 
 {% for item in section.get("items", []) %}
 
+{% set education_line = item.get("degree", "") %}
+
+{% if item.get("field_of_study") %}
+{% set education_line = education_line ~ " in " ~ item.get("field_of_study") %}
+{% endif %}
+
+{% if item.get("minor") %}
+{% set education_line = education_line ~ ", Minor in " ~ item.get("minor") %}
+{% endif %}
+
+{% if item.get("gpa") %}
+{% set education_line = education_line ~ " | GPA: " ~ item.get("gpa") %}
+{% endif %}
+
 \resumeSubheading
 { {{ item.get("school", "") | latex }} }
 { {{ item.get("location", "") | latex }} }
-{
-    {{ item.get("degree", "") | latex }}
-    {% if item.get("field_of_study") %}
-    in {{ item.get("field_of_study") | latex }}
-    {% endif %}
-    {% if item.get("minor") %}
-    , Minor in {{ item.get("minor") | latex }}
-    {% endif %}
-    {% if item.get("gpa") %}
-    ; GPA: {{ item.get("gpa") | latex }}
-    {% endif %}
-}
+{ {{ education_line | latex }} }
 { {{ item.get("graduation_date", "") | latex }} }
 
 {% if item.get("coursework") %}
 \resumeItemListStart
 
 \resumeItem{
-\textbf{Coursework:}
+\textbf{Relevant Coursework:}
 {{ item.get("coursework") | map("latex") | join(", ") }}
 }
 
@@ -307,17 +300,6 @@ topsep={{ layout.skills_top_sep }}pt
 
 %-------------------------------------------
 % GENERIC SUBHEADING SECTION
-%
-% Handles:
-% Experience
-% Research
-% Leadership & Activities
-% Volunteer Experience
-% Certifications
-% Awards & Honors
-% Teaching
-% Engineering Teams
-% etc.
 %-------------------------------------------
 
 {% else %}
