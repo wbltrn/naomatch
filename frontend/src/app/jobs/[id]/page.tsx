@@ -12,7 +12,10 @@ import {
   previewTailoredResume,
   type OptimizedResumePreviewResponse,
   type ProfileData,
+  type TailoredEducationItem,
+  type TailoredResumeItem,
   type TailoredResumeResponse,
+  type TailoredSkillGroup,
 } from "@/lib/api";
 
 type Job = {
@@ -25,8 +28,49 @@ type Job = {
   created_at?: string | null;
 };
 
+type EducationField =
+  | "school"
+  | "degree"
+  | "field_of_study"
+  | "minor"
+  | "location"
+  | "gpa"
+  | "graduation_date";
+
+type ResumeItemField =
+  | "title"
+  | "organization"
+  | "location"
+  | "start_date"
+  | "end_date"
+  | "name"
+  | "date";
+
 function cloneResume(resume: TailoredResumeResponse): TailoredResumeResponse {
   return structuredClone(resume);
+}
+
+function splitCommaSeparated(value: string): string[] {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function educationListKey(
+  sectionIndex: number,
+  itemIndex: number,
+  field: "coursework" | "honors",
+) {
+  return `${sectionIndex}-${itemIndex}-${field}`;
+}
+
+function technologiesKey(sectionIndex: number, itemIndex: number) {
+  return `${sectionIndex}-${itemIndex}-technologies`;
+}
+
+function skillsKey(sectionIndex: number, itemIndex: number) {
+  return `${sectionIndex}-${itemIndex}-skills`;
 }
 
 export default function JobDetailPage() {
@@ -38,13 +82,11 @@ export default function JobDetailPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [tailorError, setTailorError] = useState<string | null>(null);
 
   const [tailoring, setTailoring] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [savingEdits, setSavingEdits] = useState(false);
-
   const [editingResume, setEditingResume] = useState(false);
 
   const [tailoredResume, setTailoredResume] =
@@ -53,6 +95,8 @@ export default function JobDetailPage() {
   const [resumeDraft, setResumeDraft] = useState<TailoredResumeResponse | null>(
     null,
   );
+
+  const [listDrafts, setListDrafts] = useState<Record<string, string>>({});
 
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
 
@@ -106,6 +150,7 @@ export default function JobDetailPage() {
       setTailorError(null);
       setTailoredResume(null);
       setResumeDraft(null);
+      setListDrafts({});
       setPreviewMetrics(null);
       setEditingResume(false);
 
@@ -113,6 +158,7 @@ export default function JobDetailPage() {
 
       setTailoredResume(data.resume);
       setPreviewMetrics(data);
+
       await refreshPdfPreview(data.resume);
     } catch (err) {
       console.error(err);
@@ -130,16 +176,175 @@ export default function JobDetailPage() {
       return;
     }
 
-    setResumeDraft(cloneResume(tailoredResume));
+    const draft = cloneResume(tailoredResume);
+    const nextListDrafts: Record<string, string> = {};
 
+    draft.sections.forEach((section, sectionIndex) => {
+      if (section.section_type === "education") {
+        section.items.forEach((item, itemIndex) => {
+          nextListDrafts[
+            educationListKey(sectionIndex, itemIndex, "coursework")
+          ] = (item.coursework ?? []).join(", ");
+
+          nextListDrafts[educationListKey(sectionIndex, itemIndex, "honors")] =
+            (item.honors ?? []).join(", ");
+        });
+      }
+
+      if (
+        section.section_type === "projects" ||
+        section.section_type === "project"
+      ) {
+        section.items.forEach((item, itemIndex) => {
+          nextListDrafts[technologiesKey(sectionIndex, itemIndex)] = (
+            item.technologies ?? []
+          ).join(", ");
+        });
+      }
+
+      if (
+        section.section_type === "skills" ||
+        section.section_type === "technical_skills"
+      ) {
+        section.items.forEach((item, itemIndex) => {
+          nextListDrafts[skillsKey(sectionIndex, itemIndex)] =
+            item.skills.join(", ");
+        });
+      }
+    });
+
+    setResumeDraft(draft);
+    setListDrafts(nextListDrafts);
     setEditingResume(true);
     setTailorError(null);
   }
 
   function handleCancelEditing() {
     setResumeDraft(null);
+    setListDrafts({});
     setEditingResume(false);
     setTailorError(null);
+  }
+
+  function handleEducationFieldChange(
+    sectionIndex: number,
+    itemIndex: number,
+    field: EducationField,
+    value: string,
+  ) {
+    setResumeDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const updated = cloneResume(current);
+      const section = updated.sections[sectionIndex];
+
+      if (section.section_type !== "education") {
+        return current;
+      }
+
+      const item = section.items[itemIndex] as TailoredEducationItem;
+
+      if (field === "school") {
+        item.school = value;
+      } else {
+        item[field] = value || null;
+      }
+
+      return updated;
+    });
+  }
+
+  function handleEducationListChange(
+    sectionIndex: number,
+    itemIndex: number,
+    field: "coursework" | "honors",
+    value: string,
+  ) {
+    setListDrafts((current) => ({
+      ...current,
+      [educationListKey(sectionIndex, itemIndex, field)]: value,
+    }));
+  }
+
+  function handleResumeItemFieldChange(
+    sectionIndex: number,
+    itemIndex: number,
+    field: ResumeItemField,
+    value: string,
+  ) {
+    setResumeDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const updated = cloneResume(current);
+      const section = updated.sections[sectionIndex];
+
+      if (
+        section.section_type === "education" ||
+        section.section_type === "skills" ||
+        section.section_type === "technical_skills"
+      ) {
+        return current;
+      }
+
+      const item = section.items[itemIndex] as TailoredResumeItem;
+
+      item[field] = value || null;
+
+      return updated;
+    });
+  }
+
+  function handleTechnologiesChange(
+    sectionIndex: number,
+    itemIndex: number,
+    value: string,
+  ) {
+    setListDrafts((current) => ({
+      ...current,
+      [technologiesKey(sectionIndex, itemIndex)]: value,
+    }));
+  }
+
+  function handleSkillGroupChange(
+    sectionIndex: number,
+    itemIndex: number,
+    field: "category" | "skills",
+    value: string,
+  ) {
+    if (field === "skills") {
+      setListDrafts((current) => ({
+        ...current,
+        [skillsKey(sectionIndex, itemIndex)]: value,
+      }));
+
+      return;
+    }
+
+    setResumeDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const updated = cloneResume(current);
+      const section = updated.sections[sectionIndex];
+
+      if (
+        section.section_type !== "skills" &&
+        section.section_type !== "technical_skills"
+      ) {
+        return current;
+      }
+
+      const item = section.items[itemIndex] as TailoredSkillGroup;
+
+      item.category = value;
+
+      return updated;
+    });
   }
 
   function handleBulletChange(
@@ -154,9 +359,7 @@ export default function JobDetailPage() {
       }
 
       const updated = cloneResume(current);
-
       const section = updated.sections[sectionIndex];
-
       const item = section.items[itemIndex];
 
       if ("bullets" in item && item.bullets) {
@@ -165,6 +368,117 @@ export default function JobDetailPage() {
 
       return updated;
     });
+  }
+
+  function prepareResumeForSave(
+    draft: TailoredResumeResponse,
+  ): TailoredResumeResponse {
+    const cleaned = cloneResume(draft);
+
+    cleaned.sections.forEach((section, sectionIndex) => {
+      section.title = section.title.trim();
+
+      if (section.section_type === "education") {
+        section.items.forEach((item, itemIndex) => {
+          item.school = item.school.trim();
+
+          if (!item.school) {
+            throw new Error("Education entries must include a school.");
+          }
+
+          item.degree = item.degree?.trim() || null;
+
+          item.field_of_study = item.field_of_study?.trim() || null;
+
+          item.minor = item.minor?.trim() || null;
+
+          item.location = item.location?.trim() || null;
+
+          item.gpa = item.gpa?.trim() || null;
+
+          item.graduation_date = item.graduation_date?.trim() || null;
+
+          item.coursework = splitCommaSeparated(
+            listDrafts[
+              educationListKey(sectionIndex, itemIndex, "coursework")
+            ] ?? "",
+          );
+
+          item.honors = splitCommaSeparated(
+            listDrafts[educationListKey(sectionIndex, itemIndex, "honors")] ??
+              "",
+          );
+        });
+
+        return;
+      }
+
+      if (
+        section.section_type === "skills" ||
+        section.section_type === "technical_skills"
+      ) {
+        section.items.forEach((item, itemIndex) => {
+          item.category = item.category.trim();
+
+          if (!item.category) {
+            throw new Error("Skill groups must include a category.");
+          }
+
+          item.skills = splitCommaSeparated(
+            listDrafts[skillsKey(sectionIndex, itemIndex)] ?? "",
+          );
+
+          if (item.skills.length === 0) {
+            throw new Error(
+              `The "${item.category}" skill group must contain at least one skill.`,
+            );
+          }
+        });
+
+        return;
+      }
+
+      section.items.forEach((item, itemIndex) => {
+        item.title = item.title?.trim() || null;
+
+        item.name = item.name?.trim() || null;
+
+        item.organization = item.organization?.trim() || null;
+
+        item.location = item.location?.trim() || null;
+
+        item.start_date = item.start_date?.trim() || null;
+
+        item.end_date = item.end_date?.trim() || null;
+
+        item.date = item.date?.trim() || null;
+
+        item.bullets = (item.bullets ?? [])
+          .map((bullet) => bullet.trim())
+          .filter(Boolean);
+
+        if (
+          section.section_type === "projects" ||
+          section.section_type === "project"
+        ) {
+          if (!item.name && !item.title) {
+            throw new Error("Project entries must include a project name.");
+          }
+
+          item.technologies = splitCommaSeparated(
+            listDrafts[technologiesKey(sectionIndex, itemIndex)] ?? "",
+          );
+
+          return;
+        }
+
+        if (!item.title) {
+          throw new Error(`${section.title} entries must include a title.`);
+        }
+      });
+    });
+
+    return cleaned;
   }
 
   async function handleSaveEditing() {
@@ -176,13 +490,17 @@ export default function JobDetailPage() {
       setSavingEdits(true);
       setTailorError(null);
 
-      const data = await previewReviewedResume(jobId, resumeDraft);
+      const cleanedResume = prepareResumeForSave(resumeDraft);
+
+      const data = await previewReviewedResume(jobId, cleanedResume);
 
       setTailoredResume(data.resume);
       setPreviewMetrics(data);
+
       await refreshPdfPreview(data.resume);
 
       setResumeDraft(null);
+      setListDrafts({});
       setEditingResume(false);
     } catch (err) {
       console.error(err);
@@ -244,7 +562,6 @@ export default function JobDetailPage() {
           .toLowerCase();
 
       document.body.appendChild(link);
-
       link.click();
       link.remove();
 
@@ -260,44 +577,13 @@ export default function JobDetailPage() {
     }
   }
 
-  function formatResumeDate(date?: string | null) {
-    if (!date) {
-      return "Present";
-    }
-
-    const parsedDate = new Date(`${date}T00:00:00`);
-
-    return parsedDate.toLocaleDateString("en-US", {
-      month: "short",
-      year: "numeric",
-    });
-  }
-
-  function formatResumeDateRange(
-    startDate?: string | null,
-    endDate?: string | null,
-  ) {
-    if (!startDate) {
-      return "";
-    }
-
-    const start = formatResumeDate(startDate);
-
-    if (!endDate) {
-      return `${start} – Present`;
-    }
-
-    const end = formatResumeDate(endDate);
-
-    if (start === end) {
-      return start;
-    }
-
-    return `${start} – ${end}`;
-  }
-
   const displayedResume =
     editingResume && resumeDraft ? resumeDraft : tailoredResume;
+
+  const inputClass =
+    "w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition focus:border-gray-500";
+
+  const labelClass = "mb-1 block text-xs font-medium text-gray-500";
 
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-10">
@@ -471,8 +757,8 @@ export default function JobDetailPage() {
 
                   {editingResume ? (
                     <p className="mt-3 text-xs text-gray-500">
-                      Edit the generated bullet points below. Your Vault will
-                      not be changed.
+                      Edit the tailored copy below. Your Vault will not be
+                      changed.
                     </p>
                   ) : (
                     previewMetrics && (
@@ -518,9 +804,9 @@ export default function JobDetailPage() {
                 )}
 
                 {editingResume && (
-                  <div className="mx-auto w-full max-w-[850px] border border-gray-300 bg-white px-8 py-8 shadow-sm">
+                  <div className="mx-auto w-full max-w-[850px] space-y-5 border border-gray-300 bg-white px-8 py-8 shadow-sm">
                     {profile && (
-                      <header className="mb-5 text-center">
+                      <header className="text-center">
                         <h1 className="text-2xl font-bold tracking-tight text-gray-900">
                           {profile.name}
                         </h1>
@@ -562,81 +848,120 @@ export default function JobDetailPage() {
                     )}
 
                     {displayedResume.sections.map((section, sectionIndex) => (
-                      <section
-                        key={section.section_type}
-                        className="mb-5 last:mb-0"
-                      >
+                      <section key={section.section_type} className="space-y-3">
                         <h3 className="border-b border-gray-900 pb-0.5 text-sm font-semibold uppercase tracking-wide text-gray-900">
                           {section.title}
                         </h3>
 
                         {section.section_type === "education" && (
-                          <div className="mt-2 space-y-3">
-                            {section.items.map((item, index) => (
+                          <div className="space-y-4">
+                            {section.items.map((item, itemIndex) => (
                               <div
                                 key={
-                                  item.id ?? `${section.section_type}-${index}`
+                                  item.id ??
+                                  `${section.section_type}-${itemIndex}`
                                 }
+                                className="grid gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-2"
                               >
-                                <div className="flex items-baseline justify-between gap-4">
-                                  <p className="font-semibold text-gray-900">
-                                    {item.school}
-                                  </p>
+                                {[
+                                  ["School", "school", item.school],
+                                  ["Location", "location", item.location ?? ""],
+                                  ["Degree", "degree", item.degree ?? ""],
+                                  [
+                                    "Field of Study",
+                                    "field_of_study",
+                                    item.field_of_study ?? "",
+                                  ],
+                                  ["Minor", "minor", item.minor ?? ""],
+                                  ["GPA", "gpa", item.gpa ?? ""],
+                                ].map(([label, field, value]) => (
+                                  <label key={field}>
+                                    <span className={labelClass}>{label}</span>
 
-                                  {item.location && (
-                                    <p className="shrink-0 text-sm text-gray-600">
-                                      {item.location}
-                                    </p>
-                                  )}
-                                </div>
+                                    <input
+                                      className={inputClass}
+                                      value={value}
+                                      onChange={(event) =>
+                                        handleEducationFieldChange(
+                                          sectionIndex,
+                                          itemIndex,
+                                          field as EducationField,
+                                          event.target.value,
+                                        )
+                                      }
+                                    />
+                                  </label>
+                                ))}
 
-                                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3">
-                                  <p className="whitespace-nowrap text-[13px] text-gray-700">
-                                    {item.degree}
+                                <label>
+                                  <span className={labelClass}>
+                                    Graduation Date
+                                  </span>
 
-                                    {item.field_of_study && (
-                                      <> in {item.field_of_study}</>
-                                    )}
+                                  <input
+                                    type="date"
+                                    className={inputClass}
+                                    value={item.graduation_date ?? ""}
+                                    onChange={(event) =>
+                                      handleEducationFieldChange(
+                                        sectionIndex,
+                                        itemIndex,
+                                        "graduation_date",
+                                        event.target.value,
+                                      )
+                                    }
+                                  />
+                                </label>
 
-                                    {item.minor && <>, Minor in {item.minor}</>}
+                                <label className="sm:col-span-2">
+                                  <span className={labelClass}>Coursework</span>
 
-                                    {item.gpa && (
-                                      <>
-                                        {" — "}
-                                        <span>GPA: {item.gpa}</span>
-                                      </>
-                                    )}
-                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    value={
+                                      listDrafts[
+                                        educationListKey(
+                                          sectionIndex,
+                                          itemIndex,
+                                          "coursework",
+                                        )
+                                      ] ?? ""
+                                    }
+                                    onChange={(event) =>
+                                      handleEducationListChange(
+                                        sectionIndex,
+                                        itemIndex,
+                                        "coursework",
+                                        event.target.value,
+                                      )
+                                    }
+                                  />
+                                </label>
 
-                                  {item.graduation_date && (
-                                    <p className="whitespace-nowrap text-[13px] italic text-gray-600">
-                                      {formatResumeDate(item.graduation_date)}
-                                    </p>
-                                  )}
-                                </div>
+                                <label className="sm:col-span-2">
+                                  <span className={labelClass}>Honors</span>
 
-                                {item.coursework &&
-                                  item.coursework.length > 0 && (
-                                    <ul className="mt-1 list-disc pl-5 text-sm leading-5 text-gray-700">
-                                      <li>
-                                        <span className="font-semibold">
-                                          Relevant Coursework:
-                                        </span>{" "}
-                                        {item.coursework.join(", ")}
-                                      </li>
-                                    </ul>
-                                  )}
-
-                                {item.honors && item.honors.length > 0 && (
-                                  <ul className="mt-1 list-disc pl-5 text-sm leading-5 text-gray-700">
-                                    <li>
-                                      <span className="font-semibold">
-                                        Honors:
-                                      </span>{" "}
-                                      {item.honors.join(", ")}
-                                    </li>
-                                  </ul>
-                                )}
+                                  <input
+                                    className={inputClass}
+                                    value={
+                                      listDrafts[
+                                        educationListKey(
+                                          sectionIndex,
+                                          itemIndex,
+                                          "honors",
+                                        )
+                                      ] ?? ""
+                                    }
+                                    onChange={(event) =>
+                                      handleEducationListChange(
+                                        sectionIndex,
+                                        itemIndex,
+                                        "honors",
+                                        event.target.value,
+                                      )
+                                    }
+                                  />
+                                </label>
                               </div>
                             ))}
                           </div>
@@ -644,94 +969,165 @@ export default function JobDetailPage() {
 
                         {(section.section_type === "skills" ||
                           section.section_type === "technical_skills") && (
-                          <div className="mt-2 space-y-0.5">
-                            {section.items.map((item, index) => (
-                              <p
-                                key={
-                                  item.category ??
-                                  `${section.section_type}-${index}`
-                                }
-                                className="text-sm text-gray-700"
+                          <div className="space-y-3">
+                            {section.items.map((item, itemIndex) => (
+                              <div
+                                key={`${section.section_type}-${itemIndex}`}
+                                className="grid gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-[220px_1fr]"
                               >
-                                <span className="font-semibold text-gray-900">
-                                  {item.category}:
-                                </span>{" "}
-                                {item.skills.join(", ")}
-                              </p>
+                                <label>
+                                  <span className={labelClass}>Category</span>
+
+                                  <input
+                                    className={inputClass}
+                                    value={item.category}
+                                    onChange={(event) =>
+                                      handleSkillGroupChange(
+                                        sectionIndex,
+                                        itemIndex,
+                                        "category",
+                                        event.target.value,
+                                      )
+                                    }
+                                  />
+                                </label>
+
+                                <label>
+                                  <span className={labelClass}>Skills</span>
+
+                                  <input
+                                    className={inputClass}
+                                    value={
+                                      listDrafts[
+                                        skillsKey(sectionIndex, itemIndex)
+                                      ] ?? ""
+                                    }
+                                    onChange={(event) =>
+                                      handleSkillGroupChange(
+                                        sectionIndex,
+                                        itemIndex,
+                                        "skills",
+                                        event.target.value,
+                                      )
+                                    }
+                                  />
+                                </label>
+                              </div>
                             ))}
                           </div>
                         )}
 
                         {(section.section_type === "projects" ||
                           section.section_type === "project") && (
-                          <div className="mt-2 space-y-4">
+                          <div className="space-y-4">
                             {section.items.map((item, itemIndex) => (
                               <div
                                 key={
                                   item.id ??
                                   `${section.section_type}-${itemIndex}`
                                 }
+                                className="space-y-3 rounded-lg border border-gray-200 p-4"
                               >
-                                <div className="flex items-baseline justify-between gap-4">
-                                  <p className="font-semibold text-gray-900">
-                                    {item.name ?? item.title}
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                  <label>
+                                    <span className={labelClass}>
+                                      Project Name
+                                    </span>
 
-                                    {item.technologies &&
-                                      item.technologies.length > 0 && (
-                                        <span className="font-normal italic text-gray-700">
-                                          {" "}
-                                          | {item.technologies.join(", ")}
-                                        </span>
-                                      )}
-                                  </p>
+                                    <input
+                                      className={inputClass}
+                                      value={item.name ?? item.title ?? ""}
+                                      onChange={(event) =>
+                                        handleResumeItemFieldChange(
+                                          sectionIndex,
+                                          itemIndex,
+                                          "name" in item ? "name" : "title",
+                                          event.target.value,
+                                        )
+                                      }
+                                    />
+                                  </label>
 
-                                  {(item.date || item.start_date) && (
-                                    <p className="shrink-0 text-sm text-gray-600">
-                                      {item.date
-                                        ? formatResumeDate(item.date)
-                                        : formatResumeDateRange(
-                                            item.start_date,
-                                            item.end_date,
-                                          )}
-                                    </p>
-                                  )}
+                                  <label>
+                                    <span className={labelClass}>
+                                      Technologies
+                                    </span>
+
+                                    <input
+                                      className={inputClass}
+                                      value={
+                                        listDrafts[
+                                          technologiesKey(
+                                            sectionIndex,
+                                            itemIndex,
+                                          )
+                                        ] ?? ""
+                                      }
+                                      onChange={(event) =>
+                                        handleTechnologiesChange(
+                                          sectionIndex,
+                                          itemIndex,
+                                          event.target.value,
+                                        )
+                                      }
+                                    />
+                                  </label>
+
+                                  {[
+                                    ["Project Date", "date", item.date ?? ""],
+                                    [
+                                      "Start Date",
+                                      "start_date",
+                                      item.start_date ?? "",
+                                    ],
+                                    [
+                                      "End Date",
+                                      "end_date",
+                                      item.end_date ?? "",
+                                    ],
+                                  ].map(([label, field, value]) => (
+                                    <label key={field}>
+                                      <span className={labelClass}>
+                                        {label}
+                                      </span>
+
+                                      <input
+                                        type="date"
+                                        className={inputClass}
+                                        value={value}
+                                        onChange={(event) =>
+                                          handleResumeItemFieldChange(
+                                            sectionIndex,
+                                            itemIndex,
+                                            field as ResumeItemField,
+                                            event.target.value,
+                                          )
+                                        }
+                                      />
+                                    </label>
+                                  ))}
                                 </div>
 
                                 {item.bullets && item.bullets.length > 0 && (
-                                  <div className="mt-1 space-y-1">
-                                    {item.bullets.map((bullet, bulletIndex) =>
-                                      editingResume ? (
-                                        <div
-                                          key={bulletIndex}
-                                          className="flex gap-2"
-                                        >
-                                          <span className="pt-2 text-sm text-gray-500">
-                                            •
-                                          </span>
+                                  <div className="space-y-2">
+                                    <span className={labelClass}>Bullets</span>
 
-                                          <textarea
-                                            value={bullet}
-                                            onChange={(event) =>
-                                              handleBulletChange(
-                                                sectionIndex,
-                                                itemIndex,
-                                                bulletIndex,
-                                                event.target.value,
-                                              )
-                                            }
-                                            rows={3}
-                                            className="w-full resize-y rounded-md border border-gray-300 bg-white px-3 py-2 text-sm leading-5 text-gray-700 outline-none transition focus:border-gray-500"
-                                          />
-                                        </div>
-                                      ) : (
-                                        <ul
-                                          key={bulletIndex}
-                                          className="list-disc pl-5 text-sm leading-5 text-gray-700"
-                                        >
-                                          <li>{bullet}</li>
-                                        </ul>
-                                      ),
-                                    )}
+                                    {item.bullets.map((bullet, bulletIndex) => (
+                                      <textarea
+                                        key={bulletIndex}
+                                        value={bullet}
+                                        onChange={(event) =>
+                                          handleBulletChange(
+                                            sectionIndex,
+                                            itemIndex,
+                                            bulletIndex,
+                                            event.target.value,
+                                          )
+                                        }
+                                        rows={3}
+                                        className={`${inputClass} resize-y leading-5`}
+                                      />
+                                    ))}
                                   </div>
                                 )}
                               </div>
@@ -744,78 +1140,106 @@ export default function JobDetailPage() {
                           section.section_type !== "technical_skills" &&
                           section.section_type !== "projects" &&
                           section.section_type !== "project" && (
-                            <div className="mt-2 space-y-4">
+                            <div className="space-y-4">
                               {section.items.map((item, itemIndex) => (
                                 <div
                                   key={
                                     item.id ??
                                     `${section.section_type}-${itemIndex}`
                                   }
+                                  className="space-y-3 rounded-lg border border-gray-200 p-4"
                                 >
-                                  <div className="flex items-baseline justify-between gap-4">
-                                    <p className="font-semibold text-gray-900">
-                                      {item.title}
-                                    </p>
+                                  <div className="grid gap-3 sm:grid-cols-2">
+                                    {[
+                                      ["Title", "title", item.title ?? ""],
+                                      [
+                                        "Organization",
+                                        "organization",
+                                        item.organization ?? "",
+                                      ],
+                                      [
+                                        "Location",
+                                        "location",
+                                        item.location ?? "",
+                                      ],
+                                    ].map(([label, field, value]) => (
+                                      <label key={field}>
+                                        <span className={labelClass}>
+                                          {label}
+                                        </span>
 
-                                    {item.start_date && (
-                                      <p className="shrink-0 text-sm text-gray-600">
-                                        {formatResumeDateRange(
-                                          item.start_date,
-                                          item.end_date,
-                                        )}
-                                      </p>
-                                    )}
+                                        <input
+                                          className={inputClass}
+                                          value={value}
+                                          onChange={(event) =>
+                                            handleResumeItemFieldChange(
+                                              sectionIndex,
+                                              itemIndex,
+                                              field as ResumeItemField,
+                                              event.target.value,
+                                            )
+                                          }
+                                        />
+                                      </label>
+                                    ))}
+
+                                    {[
+                                      [
+                                        "Start Date",
+                                        "start_date",
+                                        item.start_date ?? "",
+                                      ],
+                                      [
+                                        "End Date",
+                                        "end_date",
+                                        item.end_date ?? "",
+                                      ],
+                                    ].map(([label, field, value]) => (
+                                      <label key={field}>
+                                        <span className={labelClass}>
+                                          {label}
+                                        </span>
+
+                                        <input
+                                          type="date"
+                                          className={inputClass}
+                                          value={value}
+                                          onChange={(event) =>
+                                            handleResumeItemFieldChange(
+                                              sectionIndex,
+                                              itemIndex,
+                                              field as ResumeItemField,
+                                              event.target.value,
+                                            )
+                                          }
+                                        />
+                                      </label>
+                                    ))}
                                   </div>
 
-                                  {(item.organization || item.location) && (
-                                    <div className="flex items-baseline justify-between gap-4">
-                                      <p className="text-sm italic text-gray-700">
-                                        {item.organization}
-                                      </p>
-
-                                      {item.location && (
-                                        <p className="shrink-0 text-sm italic text-gray-600">
-                                          {item.location}
-                                        </p>
-                                      )}
-                                    </div>
-                                  )}
-
                                   {item.bullets && item.bullets.length > 0 && (
-                                    <div className="mt-1 space-y-1">
-                                      {item.bullets.map(
-                                        (bullet, bulletIndex) =>
-                                          editingResume ? (
-                                            <div
-                                              key={bulletIndex}
-                                              className="flex gap-2"
-                                            >
-                                              <span className="pt-2 text-sm text-gray-500">
-                                                •
-                                              </span>
+                                    <div className="space-y-2">
+                                      <span className={labelClass}>
+                                        Bullets
+                                      </span>
 
-                                              <textarea
-                                                value={bullet}
-                                                onChange={(event) =>
-                                                  handleBulletChange(
-                                                    sectionIndex,
-                                                    itemIndex,
-                                                    bulletIndex,
-                                                    event.target.value,
-                                                  )
-                                                }
-                                                rows={3}
-                                                className="w-full resize-y rounded-md border border-gray-300 bg-white px-3 py-2 text-sm leading-5 text-gray-700 outline-none transition focus:border-gray-500"
-                                              />
-                                            </div>
-                                          ) : (
-                                            <ul
-                                              key={bulletIndex}
-                                              className="list-disc pl-5 text-sm leading-5 text-gray-700"
-                                            >
-                                              <li>{bullet}</li>
-                                            </ul>
-                                          ),
+                                      {item.bullets.map(
+                                        (bullet, bulletIndex) => (
+                                          <textarea
+                                            key={bulletIndex}
+                                            value={bullet}
+                                            onChange={(event) =>
+                                              handleBulletChange(
+                                                sectionIndex,
+                                                itemIndex,
+                                                bulletIndex,
+                                                event.target.value,
+                                              )
+                                            }
+                                            rows={3}
+                                            className={`${inputClass} resize-y leading-5`}
+                                          />
+                                        ),
                                       )}
                                     </div>
                                   )}
