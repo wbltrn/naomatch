@@ -25,8 +25,8 @@ from app.services.resume_renderer import (
 )
 
 
-UNDERFILLED_THRESHOLD = 0.85
-TARGET_FILL_RATIO = 0.87
+UNDERFILLED_THRESHOLD = 0.92
+TARGET_FILL_RATIO = 0.95
 MAX_ALTERNATE_ATTEMPTS = 10
 
 LAYOUT_ORDER = [
@@ -188,6 +188,165 @@ def optimize_resume_for_one_page(
             "onto one page without removing "
             "protected content."
         )
+    
+        # -------------------------------------------------------------
+    # Restore trimmed bullets when real PDF space remains.
+    #
+    # pack_tailored_resume() may remove bullets before rendering.
+    # If the accepted PDF still has visible room, try restoring
+    # original bullets one at a time, strongest selected entries
+    # first, while preserving the one-page guarantee.
+    # -------------------------------------------------------------
+
+    if (
+        trimmed
+        and accepted_metrics.fill_ratio
+        < TARGET_FILL_RATIO
+    ):
+        original_sections = {
+            section.section_type: section
+            for section in tailored_resume.sections
+        }
+
+        for accepted_section in accepted_resume.sections:
+            if (
+                accepted_metrics.fill_ratio
+                >= TARGET_FILL_RATIO
+            ):
+                break
+
+            original_section = original_sections.get(
+                accepted_section.section_type
+            )
+
+            if original_section is None:
+                continue
+
+            original_items_by_id = {
+                item.id: item
+                for item in original_section.items
+                if item.id is not None
+            }
+
+            for accepted_item in accepted_section.items:
+                if (
+                    accepted_metrics.fill_ratio
+                    >= TARGET_FILL_RATIO
+                ):
+                    break
+
+                if accepted_item.id is None:
+                    continue
+
+                original_item = original_items_by_id.get(
+                    accepted_item.id
+                )
+
+                if original_item is None:
+                    continue
+
+                original_bullets = list(
+                    original_item.bullets
+                )
+
+                accepted_bullets = list(
+                    accepted_item.bullets
+                )
+
+                for bullet in original_bullets:
+                    if (
+                        accepted_metrics.fill_ratio
+                        >= TARGET_FILL_RATIO
+                    ):
+                        break
+
+                    if bullet in accepted_bullets:
+                        continue
+
+                    candidate_resume = (
+                        accepted_resume.model_copy(
+                            deep=True
+                        )
+                    )
+
+                    candidate_section = next(
+                        (
+                            section
+                            for section
+                            in candidate_resume.sections
+                            if (
+                                section.section_type
+                                == accepted_section.section_type
+                            )
+                        ),
+                        None,
+                    )
+
+                    if candidate_section is None:
+                        continue
+
+                    candidate_item = next(
+                        (
+                            item
+                            for item
+                            in candidate_section.items
+                            if item.id
+                            == accepted_item.id
+                        ),
+                        None,
+                    )
+
+                    if candidate_item is None:
+                        continue
+
+                    candidate_item.bullets.append(
+                        bullet
+                    )
+
+                    (
+                        candidate_pdf,
+                        candidate_metrics,
+                    ) = render_resume_candidate(
+                        profile=profile,
+                        resume=candidate_resume,
+                        layout_name=accepted_layout,
+                    )
+
+                    if (
+                        candidate_metrics.page_count
+                        != 1
+                    ):
+                        delete_generated_pdf(
+                            candidate_pdf
+                        )
+
+                        continue
+
+                    if (
+                        candidate_metrics.fill_ratio
+                        <= accepted_metrics.fill_ratio
+                    ):
+                        delete_generated_pdf(
+                            candidate_pdf
+                        )
+
+                        continue
+
+                    delete_generated_pdf(
+                        pdf_path
+                    )
+
+                    pdf_path = candidate_pdf
+                    accepted_resume = (
+                        candidate_resume
+                    )
+                    accepted_metrics = (
+                        candidate_metrics
+                    )
+
+                    accepted_bullets.append(
+                        bullet
+                    )
 
     # -------------------------------------------------------------
     # Underfill optimization

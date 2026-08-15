@@ -909,3 +909,62 @@ export async function downloadTailoredResumePdf(
 
   return response.blob();
 }
+
+export async function previewReviewedResume(
+  jobId: number,
+  resume: TailoredResumeResponse,
+): Promise<OptimizedResumePreviewResponse> {
+  const response = await fetch(
+    `${API_URL}/resume-tailor/job/${jobId}/reviewed/preview`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(resume),
+    },
+  );
+
+  if (!response.ok) {
+    const errorData = await response
+      .json()
+      .catch(() => null);
+
+    throw new Error(
+      errorData?.detail
+        || "Failed to optimize reviewed resume",
+    );
+  }
+
+  return response.json();
+}
+
+
+export async function downloadReviewedResumePdf(
+  jobId: number,
+  resume: TailoredResumeResponse,
+): Promise<Blob> {
+  const response = await fetch(
+    `${API_URL}/resume-tailor/job/${jobId}/reviewed/pdf`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(resume),
+    },
+  );
+
+  if (!response.ok) {
+    const errorData = await response
+      .json()
+      .catch(() => null);
+
+    throw new Error(
+      errorData?.detail
+        || "Failed to generate reviewed resume PDF",
+    );
+  }
+
+  return response.blob();
+}

@@ -17,6 +17,18 @@ resume_data = {
             },
         ],
     },
+    "layout": {
+        "section_before": 2,
+        "section_after_rule": 1,
+        "subheading_before": 0,
+        "subheading_after": -2,
+        "project_after": -2,
+        "bullet_after": 0,
+        "bullet_list_after": -2,
+        "skills_item_sep": 0,
+        "skills_top_sep": 0,
+        "skills_after": -2,
+    },
     "section_order": [
         "education",
         "experience",
