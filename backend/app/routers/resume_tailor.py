@@ -267,3 +267,116 @@ def generate_resume_pdf(
             status_code=500,
             detail=str(error),
         ) from error
+
+@router.post(
+    "/job/{job_id}/reviewed/preview",
+    response_model=OptimizedResumePreview,
+    response_model_exclude_none=True,
+    response_model_exclude_defaults=True,
+)
+def preview_reviewed_resume(
+    job_id: int,
+    reviewed_resume: TailoredResumeDocument,
+    db: Session = Depends(get_db),
+):
+    # Confirm the job still exists.
+    get_job_or_404(
+        db,
+        job_id,
+    )
+
+    profile = (
+        db.query(UserProfile)
+        .first()
+    )
+
+    if profile is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User profile not found",
+        )
+
+    optimized = None
+
+    try:
+        optimized = (
+            optimize_resume_for_one_page(
+                profile=profile,
+                tailored_resume=reviewed_resume,
+            )
+        )
+
+        return OptimizedResumePreview(
+            resume=optimized.resume,
+            layout_profile=(
+                optimized.layout_profile
+            ),
+            page_count=(
+                optimized.metrics.page_count
+            ),
+            fill_ratio=(
+                optimized.metrics.fill_ratio
+            ),
+            trimmed=optimized.trimmed,
+            alternate_attempts=(
+                optimized.alternate_attempts
+            ),
+        )
+
+    except ResumePDFGenerationError as error:
+        raise HTTPException(
+            status_code=500,
+            detail=str(error),
+        ) from error
+
+    finally:
+        if optimized is not None:
+            delete_generated_pdf(
+                optimized.pdf_path
+            )
+
+
+@router.post(
+    "/job/{job_id}/reviewed/pdf",
+)
+def generate_reviewed_resume_pdf(
+    job_id: int,
+    reviewed_resume: TailoredResumeDocument,
+    db: Session = Depends(get_db),
+):
+    # Confirm the job still exists.
+    get_job_or_404(
+        db,
+        job_id,
+    )
+
+    profile = (
+        db.query(UserProfile)
+        .first()
+    )
+
+    if profile is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User profile not found",
+        )
+
+    try:
+        optimized = (
+            optimize_resume_for_one_page(
+                profile=profile,
+                tailored_resume=reviewed_resume,
+            )
+        )
+
+        return FileResponse(
+            path=optimized.pdf_path,
+            media_type="application/pdf",
+            filename="tailored_resume.pdf",
+        )
+
+    except ResumePDFGenerationError as error:
+        raise HTTPException(
+            status_code=500,
+            detail=str(error),
+        ) from error
