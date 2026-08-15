@@ -303,7 +303,7 @@ export default function JobDetailPage() {
                       <div className="mt-1 flex flex-wrap justify-center gap-x-2 text-xs text-gray-700">
                         {profile.phone && <span>{profile.phone}</span>}
 
-                        {profile.phone && profile.email && <span>•</span>}
+                        {profile.phone && profile.email && <span className="mx-1.5">|</span>}
 
                         {profile.email && (
                           <a
@@ -319,7 +319,7 @@ export default function JobDetailPage() {
                             key={`${link.label}-${link.url}`}
                             className="flex gap-x-2"
                           >
-                            <span>•</span>
+                            <span className="mx-1.5">|</span>
 
                             <a
                               href={link.url}
@@ -364,6 +364,10 @@ export default function JobDetailPage() {
                                     {item.minor
                                       ? `, Minor in ${item.minor}`
                                       : ""}
+
+                                    {item.gpa && (
+                                      <> — GPA: {item.gpa}</>
+                                    )}
                                   </p>
                                 </div>
 
@@ -379,12 +383,7 @@ export default function JobDetailPage() {
                                 </div>
                               </div>
 
-                              {item.gpa && (
-                                <p className="mt-1 text-sm text-gray-700">
-                                  <span className="font-medium">GPA:</span>{" "}
-                                  {item.gpa}
-                                </p>
-                              )}
+                              
 
                               {item.coursework &&
                                 item.coursework.length > 0 && (
@@ -400,7 +399,8 @@ export default function JobDetailPage() {
                         </div>
                       )}
 
-                      {section.section_type === "skills" && (
+                      {(section.section_type === "skills" ||
+  section.section_type === "technical_skills") && (
                         <div className="mt-2 space-y-0.5">
                           {section.items.map((item) => (
                             <p
@@ -417,7 +417,8 @@ export default function JobDetailPage() {
                       )}
 
                       {section.section_type !== "education" &&
-                        section.section_type !== "skills" && (
+                        section.section_type !== "skills" &&
+                        section.section_type !== "technical_skills" && (
                           <div className="mt-2 space-y-4">
                             {section.items.map((item) => (
                               <div key={item.id}>

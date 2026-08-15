@@ -1,10 +1,18 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-
-import { createJob, getJobs } from "@/lib/api";
-
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+
+import {
+  downloadTailoredResumePdf,
+  getJob,
+  getProfile,
+  previewTailoredResume,
+  type OptimizedResumePreviewResponse,
+  type ProfileData,
+  type TailoredResumeResponse,
+} from "@/lib/api";
 
 type Job = {
   id: number;
@@ -16,351 +24,509 @@ type Job = {
   created_at?: string | null;
 };
 
-type JobFormData = {
-  company: string;
-  title: string;
-  location: string;
-  job_url: string;
-  description: string;
-};
+export default function JobDetailPage() {
+  const params = useParams();
+  const jobId = Number(params.id);
 
-const EMPTY_JOB_FORM: JobFormData = {
-  company: "",
-  title: "",
-  location: "",
-  job_url: "",
-  description: "",
-};
-
-export default function JobsPage() {
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [job, setJob] = useState<Job | null>(null);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tailorError, setTailorError] = useState<string | null>(null);
+  const [tailoring, setTailoring] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
-  const [formData, setFormData] = useState<JobFormData>(EMPTY_JOB_FORM);
+  const [tailoredResume, setTailoredResume] =
+    useState<TailoredResumeResponse | null>(null);
 
-  const [submitting, setSubmitting] = useState(false);
+  const [previewMetrics, setPreviewMetrics] =
+    useState<OptimizedResumePreviewResponse | null>(null);
 
-  const [formError, setFormError] = useState<string | null>(null);
+  useEffect(() => {
+    async function loadJob() {
+      if (!Number.isInteger(jobId) || jobId <= 0) {
+        setError("Invalid job ID.");
+        setLoading(false);
+        return;
+      }
 
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+      try {
+        setLoading(true);
+        setError(null);
 
-  async function loadJobs() {
+        const [jobData, profileData] = await Promise.all([
+          getJob(jobId),
+          getProfile(),
+        ]);
+
+        setJob(jobData);
+        setProfile(profileData);
+      } catch (err) {
+        console.error(err);
+
+        setError(err instanceof Error ? err.message : "Unable to load job.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadJob();
+  }, [jobId]);
+
+  async function handleTailorResume() {
     try {
-      setLoading(true);
-      setError(null);
+      setTailoring(true);
+      setTailorError(null);
+      setTailoredResume(null);
+      setPreviewMetrics(null);
 
-      const data = await getJobs();
+      const data = await previewTailoredResume(jobId);
 
-      setJobs(data);
+      setTailoredResume(data.resume);
+      setPreviewMetrics(data);
     } catch (err) {
       console.error(err);
 
-      setError("Unable to load jobs.");
+      setTailorError(
+        err instanceof Error ? err.message : "Unable to tailor resume.",
+      );
     } finally {
-      setLoading(false);
+      setTailoring(false);
     }
   }
 
-  useEffect(() => {
-    loadJobs();
-  }, []);
-
-  useEffect(() => {
-    if (!successMessage) {
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      setSuccessMessage(null);
-    }, 3000);
-
-    return () => {
-      window.clearTimeout(timeout);
-    };
-  }, [successMessage]);
-
-  function updateField(field: keyof JobFormData, value: string) {
-    setFormData((current) => ({
-      ...current,
-      [field]: value,
-    }));
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (
-      !formData.company.trim() ||
-      !formData.title.trim() ||
-      !formData.description.trim()
-    ) {
-      setFormError("Company, title, and job description are required.");
-
-      return;
-    }
-
+  async function handleDownloadPdf() {
     try {
-      setSubmitting(true);
-      setFormError(null);
-      setSuccessMessage(null);
+      setDownloadingPdf(true);
+      setTailorError(null);
 
-      await createJob({
-        company: formData.company.trim(),
+      const pdfBlob = await downloadTailoredResumePdf(jobId);
 
-        title: formData.title.trim(),
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
 
-        location: formData.location.trim() || undefined,
+      link.href = url;
 
-        job_url: formData.job_url.trim() || null,
+      link.download =
+        `${job?.company ?? "tailored"}-${job?.title ?? "resume"}-resume.pdf`
+          .replace(/\s+/g, "-")
+          .toLowerCase();
 
-        description: formData.description.trim(),
-      });
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
 
-      setFormData(EMPTY_JOB_FORM);
-
-      setSuccessMessage("Job saved.");
-
-      await loadJobs();
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
 
-      setFormError(err instanceof Error ? err.message : "Unable to save job.");
+      setTailorError(
+        err instanceof Error ? err.message : "Unable to download resume PDF.",
+      );
     } finally {
-      setSubmitting(false);
+      setDownloadingPdf(false);
     }
+  }
+
+  function formatResumeDate(date?: string | null) {
+    if (!date) {
+      return "Present";
+    }
+
+    const parsedDate = new Date(`${date}T00:00:00`);
+
+    return parsedDate.toLocaleDateString("en-US", {
+      month: "short",
+      year: "numeric",
+    });
+  }
+
+  function formatResumeDateRange(
+    startDate?: string | null,
+    endDate?: string | null,
+  ) {
+    if (!startDate) {
+      return "";
+    }
+
+    const start = formatResumeDate(startDate);
+
+    if (!endDate) {
+      return `${start} – Present`;
+    }
+
+    const end = formatResumeDate(endDate);
+
+    if (start === end) {
+      return start;
+    }
+
+    return `${start} – ${end}`;
   }
 
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-semibold text-gray-900">Jobs</h1>
+        <Link
+          href="/jobs"
+          className="text-sm font-medium text-gray-600 hover:text-gray-900"
+        >
+          ← Back to Jobs
+        </Link>
 
-          <p className="mt-2 text-sm text-gray-600">
-            Save target roles and tailor your resume for each application.
-          </p>
-        </div>
+        {loading && (
+          <p className="mt-8 text-sm text-gray-600">Loading job...</p>
+        )}
 
-        <section className="mb-10 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Add Job</h2>
-
-            <p className="mt-1 text-sm text-gray-600">
-              Paste the full job description so Naomatch can tailor your resume
-              against the actual posting.
-            </p>
+        {error && (
+          <div className="mt-8 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {error}
           </div>
+        )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid gap-5 md:grid-cols-2">
-              <div>
-                <label
-                  htmlFor="company"
-                  className="mb-2 block text-sm font-medium text-gray-700"
-                >
-                  Company
-                </label>
+        {!loading && !error && job && (
+          <>
+            <section className="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
+                <div>
+                  <h1 className="text-3xl font-semibold text-gray-900">
+                    {job.title}
+                  </h1>
 
-                <input
-                  id="company"
-                  type="text"
-                  value={formData.company}
-                  onChange={(event) =>
-                    updateField("company", event.target.value)
-                  }
-                  placeholder="e.g. Company name"
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-gray-500"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="title"
-                  className="mb-2 block text-sm font-medium text-gray-700"
-                >
-                  Job Title
-                </label>
-
-                <input
-                  id="title"
-                  type="text"
-                  value={formData.title}
-                  onChange={(event) => updateField("title", event.target.value)}
-                  placeholder="e.g. Software Engineer"
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-gray-500"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="location"
-                  className="mb-2 block text-sm font-medium text-gray-700"
-                >
-                  Location
-                </label>
-
-                <input
-                  id="location"
-                  type="text"
-                  value={formData.location}
-                  onChange={(event) =>
-                    updateField("location", event.target.value)
-                  }
-                  placeholder="e.g. New York, NY"
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-gray-500"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="job_url"
-                  className="mb-2 block text-sm font-medium text-gray-700"
-                >
-                  Job URL
-                </label>
-
-                <input
-                  id="job_url"
-                  type="url"
-                  value={formData.job_url}
-                  onChange={(event) =>
-                    updateField("job_url", event.target.value)
-                  }
-                  placeholder="https://..."
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-gray-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label
-                htmlFor="description"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
-                Job Description
-              </label>
-
-              <textarea
-                id="description"
-                value={formData.description}
-                onChange={(event) =>
-                  updateField("description", event.target.value)
-                }
-                rows={12}
-                placeholder="Paste the full job description here..."
-                className="w-full resize-y rounded-lg border border-gray-300 bg-white px-3 py-3 text-sm leading-6 text-gray-900 outline-none transition focus:border-gray-500"
-              />
-            </div>
-
-            {formError && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {formError}
-              </div>
-            )}
-
-            {successMessage && (
-              <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 transition-opacity duration-300">
-                {successMessage}
-              </div>
-            )}
-
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {submitting ? "Saving..." : "Save Job"}
-              </button>
-            </div>
-          </form>
-        </section>
-
-        <section>
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Saved Jobs</h2>
-
-            <p className="mt-1 text-sm text-gray-600">
-              {jobs.length === 1 ? "1 saved job" : `${jobs.length} saved jobs`}
-            </p>
-          </div>
-
-          {loading && <p className="text-sm text-gray-600">Loading jobs...</p>}
-
-          {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          {!loading && !error && jobs.length === 0 && (
-            <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center">
-              <h3 className="text-lg font-medium text-gray-900">No jobs yet</h3>
-
-              <p className="mt-2 text-sm text-gray-600">
-                Add a job posting above to start tailoring a resume.
-              </p>
-            </div>
-          )}
-
-          {!loading && !error && jobs.length > 0 && (
-            <div className="space-y-4">
-              {jobs.map((job) => (
-                <article
-                  key={job.id}
-                  className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {job.title}
-                      </h3>
-
-                      <p className="mt-1 text-sm font-medium text-gray-700">
-                        {job.company}
-                      </p>
-
-                      {job.location && (
-                        <p className="mt-1 text-sm text-gray-500">
-                          {job.location}
-                        </p>
-                      )}
-                    </div>
-
-                    <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
-                      Job #{job.id}
-                    </span>
-                  </div>
-
-                  <p className="mt-4 line-clamp-3 text-sm leading-6 text-gray-600">
-                    {job.description}
+                  <p className="mt-2 text-lg font-medium text-gray-700">
+                    {job.company}
                   </p>
 
-                  <div className="mt-4 flex items-center gap-4">
-                    <Link
-                      href={`/jobs/${job.id}`}
-                      className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700"
-                    >
-                      View Job
-                    </Link>
+                  {job.location && (
+                    <p className="mt-1 text-sm text-gray-500">{job.location}</p>
+                  )}
+                </div>
 
-                    {job.job_url && (
-                      <a
-                        href={job.job_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-sm font-medium text-gray-700 underline underline-offset-4"
-                      >
-                        Original Posting
-                      </a>
-                    )}
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={handleTailorResume}
+                    disabled={tailoring}
+                    className="inline-flex rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {tailoring ? "Tailoring..." : "Tailor Resume"}
+                  </button>
+
+                  {job.job_url && (
+                    <a
+                      href={job.job_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                    >
+                      Original Posting ↗
+                    </a>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {tailorError && (
+              <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                {tailorError}
+              </div>
+            )}
+
+            {tailoredResume !== null && (
+              <section className="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div className="mb-6">
+                  <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-900">
+                        Tailored Resume
+                      </h2>
+
+                      <p className="mt-1 text-sm text-gray-500">
+                        Generated from your vault for {job.company} ·{" "}
+                        {job.title}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleDownloadPdf}
+                      disabled={downloadingPdf}
+                      className="inline-flex shrink-0 items-center justify-center rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {downloadingPdf ? "Generating PDF..." : "Download PDF"}
+                    </button>
                   </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
+
+                  {previewMetrics && (
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-600">
+                      <span className="rounded-full bg-gray-100 px-2.5 py-1">
+                        1-page optimized
+                      </span>
+
+                      <span className="rounded-full bg-gray-100 px-2.5 py-1">
+                        {previewMetrics.layout_profile} layout
+                      </span>
+
+                      <span className="rounded-full bg-gray-100 px-2.5 py-1">
+                        {Math.round(previewMetrics.fill_ratio * 100)}% page
+                        utilization
+                      </span>
+
+                      {previewMetrics.trimmed && (
+                        <span className="rounded-full bg-gray-100 px-2.5 py-1">
+                          Content fitted automatically
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="mx-auto max-w-[850px] border border-gray-300 bg-white px-8 py-8 shadow-sm">
+                  {profile && (
+                    <header className="mb-5 text-center">
+                      <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                        {profile.name}
+                      </h1>
+
+                      <div className="mt-1 flex flex-wrap justify-center text-xs text-gray-700">
+                        {profile.phone && <span>{profile.phone}</span>}
+
+                        {profile.email && (
+                          <>
+                            {profile.phone && <span className="mx-1.5">|</span>}
+
+                            <a
+                              href={`mailto:${profile.email}`}
+                              className="hover:underline"
+                            >
+                              {profile.email}
+                            </a>
+                          </>
+                        )}
+
+                        {profile.links.map((link) => (
+                          <span key={`${link.label}-${link.url}`}>
+                            <span className="mx-1.5">|</span>
+
+                            <a
+                              href={link.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="hover:underline"
+                            >
+                              {link.label}
+                            </a>
+                          </span>
+                        ))}
+                      </div>
+                    </header>
+                  )}
+
+                  {tailoredResume.sections.map((section) => (
+                    <section
+                      key={section.section_type}
+                      className="mb-5 last:mb-0"
+                    >
+                      <h3 className="border-b border-gray-900 pb-0.5 text-sm font-semibold uppercase tracking-wide text-gray-900">
+                        {section.title}
+                      </h3>
+
+                      {section.section_type === "education" && (
+                        <div className="mt-2 space-y-3">
+                          {section.items.map((item, index) => (
+                            <div
+                              key={
+                                item.id ?? `${section.section_type}-${index}`
+                              }
+                            >
+                              <div className="flex items-baseline justify-between gap-4">
+                                <p className="font-semibold text-gray-900">
+                                  {item.school}
+                                </p>
+
+                                {item.location && (
+                                  <p className="shrink-0 text-sm text-gray-600">
+                                    {item.location}
+                                  </p>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3">
+                                <p className="whitespace-nowrap text-[13px] text-gray-700">
+                                  {item.degree}
+
+                                  {item.field_of_study && (
+                                    <> in {item.field_of_study}</>
+                                  )}
+
+                                  {item.minor && <>, Minor in {item.minor}</>}
+
+                                  {item.gpa && (
+                                    <>
+                                      {" — "}
+                                      <span>GPA: {item.gpa}</span>
+                                    </>
+                                  )}
+                                </p>
+                                {item.graduation_date && (
+                                  <p className="whitespace-nowrap text-[13px] italic text-gray-600">
+                                    {formatResumeDate(item.graduation_date)}
+                                  </p>
+                                )}
+                              </div>
+
+                              {item.coursework &&
+                                item.coursework.length > 0 && (
+                                  <ul className="mt-1 list-disc pl-5 text-sm leading-5 text-gray-700">
+                                    <li>
+                                      <span className="font-semibold">
+                                        Relevant Coursework:
+                                      </span>{" "}
+                                      {item.coursework.join(", ")}
+                                    </li>
+                                  </ul>
+                                )}
+
+                              {item.honors && item.honors.length > 0 && (
+                                <ul className="mt-1 list-disc pl-5 text-sm leading-5 text-gray-700">
+                                  <li>
+                                    <span className="font-semibold">
+                                      Honors:
+                                    </span>{" "}
+                                    {item.honors.join(", ")}
+                                  </li>
+                                </ul>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {(section.section_type === "skills" ||
+                        section.section_type === "technical_skills") && (
+                        <div className="mt-2 space-y-0.5">
+                          {section.items.map((item, index) => (
+                            <p
+                              key={
+                                item.category ??
+                                `${section.section_type}-${index}`
+                              }
+                              className="text-sm text-gray-700"
+                            >
+                              <span className="font-semibold text-gray-900">
+                                {item.category}:
+                              </span>{" "}
+                              {item.skills.join(", ")}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+
+                      {(section.section_type === "projects" ||
+                        section.section_type === "project") && (
+                        <div className="mt-2 space-y-4">
+                          {section.items.map((item, index) => (
+                            <div
+                              key={
+                                item.id ?? `${section.section_type}-${index}`
+                              }
+                            >
+                              <div className="flex items-baseline justify-between gap-4">
+                                <p className="font-semibold text-gray-900">
+                                  {item.name ?? item.title}
+
+                                  {item.technologies &&
+                                    item.technologies.length > 0 && (
+                                      <span className="font-normal italic text-gray-700">
+                                        {" "}
+                                        | {item.technologies.join(", ")}
+                                      </span>
+                                    )}
+                                </p>
+
+                                {(item.date || item.start_date) && (
+                                  <p className="shrink-0 text-sm text-gray-600">
+                                    {item.date
+                                      ? formatResumeDate(item.date)
+                                      : formatResumeDateRange(
+                                          item.start_date,
+                                          item.end_date,
+                                        )}
+                                  </p>
+                                )}
+                              </div>
+
+                              {item.bullets && item.bullets.length > 0 && (
+                                <ul className="mt-1 list-disc space-y-1 pl-5 text-sm leading-5 text-gray-700">
+                                  {item.bullets.map((bullet, bulletIndex) => (
+                                    <li key={bulletIndex}>{bullet}</li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {section.section_type !== "education" &&
+                        section.section_type !== "skills" &&
+                        section.section_type !== "technical_skills" &&
+                        section.section_type !== "projects" &&
+                        section.section_type !== "project" && (
+                          <div className="mt-2 space-y-4">
+                            {section.items.map((item, index) => (
+                              <div
+                                key={
+                                  item.id ?? `${section.section_type}-${index}`
+                                }
+                              >
+                                <div className="flex items-baseline justify-between gap-4">
+                                  <p className="font-semibold text-gray-900">
+                                    {item.title}
+                                  </p>
+
+                                  {item.start_date && (
+                                    <p className="shrink-0 text-sm text-gray-600">
+                                      {formatResumeDateRange(
+                                        item.start_date,
+                                        item.end_date,
+                                      )}
+                                    </p>
+                                  )}
+                                </div>
+
+                                {(item.organization || item.location) && (
+                                  <div className="flex items-baseline justify-between gap-4">
+                                    <p className="text-sm italic text-gray-700">
+                                      {item.organization}
+                                    </p>
+
+                                    {item.location && (
+                                      <p className="shrink-0 text-sm italic text-gray-600">
+                                        {item.location}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+
+                                {item.bullets && item.bullets.length > 0 && (
+                                  <ul className="mt-1 list-disc space-y-1 pl-5 text-sm leading-5 text-gray-700">
+                                    {item.bullets.map((bullet, bulletIndex) => (
+                                      <li key={bulletIndex}>{bullet}</li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                    </section>
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
+        )}
       </div>
     </main>
   );

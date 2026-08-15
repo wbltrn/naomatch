@@ -732,17 +732,24 @@ export type TailoredEducationItem = {
   gpa?: string | null;
   graduation_date?: string | null;
   coursework?: string[];
+  honors?: string[];
 };
 
 export type TailoredResumeItem = {
   id: number;
   source_section_type: string;
-  title: string;
+
+  title?: string | null;
   organization?: string | null;
   location?: string | null;
   start_date?: string | null;
   end_date?: string | null;
   description?: string | null;
+
+  name?: string | null;
+  date?: string | null;
+  technologies?: string[];
+
   bullets?: string[];
 };
 
@@ -763,7 +770,47 @@ export type TailoredResumeSection =
       items: TailoredSkillGroup[];
     }
   | {
-      section_type: "experience" | "projects" | "leadership";
+      section_type: "technical_skills";
+      title: string;
+      items: TailoredSkillGroup[];
+    }
+  | {
+      section_type: "experience";
+      title: string;
+      items: TailoredResumeItem[];
+    }
+  | {
+      section_type: "projects";
+      title: string;
+      items: TailoredResumeItem[];
+    }
+  | {
+      section_type: "project";
+      title: string;
+      items: TailoredResumeItem[];
+    }
+  | {
+      section_type: "research";
+      title: string;
+      items: TailoredResumeItem[];
+    }
+  | {
+      section_type: "leadership";
+      title: string;
+      items: TailoredResumeItem[];
+    }
+  | {
+      section_type: "volunteer";
+      title: string;
+      items: TailoredResumeItem[];
+    }
+  | {
+      section_type: "certifications";
+      title: string;
+      items: TailoredResumeItem[];
+    }
+  | {
+      section_type: "awards";
       title: string;
       items: TailoredResumeItem[];
     };
