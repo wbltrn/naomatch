@@ -1,9 +1,14 @@
+import logging
 import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
 from pypdf import PdfReader
+
+
+logger = logging.getLogger("naomatch.tailor")
+
 
 # -------------------------------------------------------------
 # Resume page geometry
@@ -77,10 +82,16 @@ def compile_latex_to_pdf(
             ]
         ).strip()
 
+        logger.error(
+            "pdflatex compilation failed: %s",
+            compiler_output,
+        )
+
         temp_dir.cleanup()
 
         raise ResumePDFGenerationError(
-            compiler_output
+            "We couldn't generate your resume PDF right now. "
+            "Please try again."
         )
 
     if not pdf_path.exists():

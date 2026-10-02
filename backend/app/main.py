@@ -1,5 +1,8 @@
-from fastapi import FastAPI
+import logging
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from app.database import Base, engine
 from app.models.education import Education
@@ -49,6 +52,17 @@ app.include_router(vault_router)
 app.include_router(education_router)
 app.include_router(skills_router)
 app.include_router(resume_import_router)
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logging.getLogger("naomatch.tailor").exception(exc)
+
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Something went wrong. Please try again."},
+    )
+
 
 @app.get("/")
 def root():

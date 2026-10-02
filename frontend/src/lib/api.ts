@@ -1,5 +1,25 @@
 const API_URL = "http://127.0.0.1:8000";
 
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+async function throwApiError(
+  response: Response,
+  fallbackMessage: string,
+): Promise<never> {
+  const errorData = await response.json().catch(() => null);
+
+  throw new ApiError(errorData?.detail || fallbackMessage, response.status);
+}
+
 export async function checkBackend() {
   const response = await fetch(`${API_URL}/health`);
 
@@ -443,7 +463,7 @@ export async function getProfile(): Promise<ProfileData> {
   const response = await fetch(`${API_URL}/profile`);
 
   if (!response.ok) {
-    throw new Error("Failed to fetch profile");
+    await throwApiError(response, "Failed to fetch profile");
   }
 
   return response.json();
@@ -849,14 +869,7 @@ export async function tailorResume(
   );
 
   if (!response.ok) {
-    const errorData = await response
-      .json()
-      .catch(() => null);
-
-    throw new Error(
-      errorData?.detail
-        || "Failed to tailor resume"
-    );
+    await throwApiError(response, "Failed to tailor resume");
   }
 
   return response.json();
@@ -873,14 +886,7 @@ export async function previewTailoredResume(
   );
 
   if (!response.ok) {
-    const errorData = await response
-      .json()
-      .catch(() => null);
-
-    throw new Error(
-      errorData?.detail
-        || "Failed to optimize resume preview"
-    );
+    await throwApiError(response, "Failed to optimize resume preview");
   }
 
   return response.json();
@@ -897,14 +903,7 @@ export async function downloadTailoredResumePdf(
   );
 
   if (!response.ok) {
-    const errorData = await response
-      .json()
-      .catch(() => null);
-
-    throw new Error(
-      errorData?.detail
-        || "Failed to generate resume PDF"
-    );
+    await throwApiError(response, "Failed to generate resume PDF");
   }
 
   return response.blob();
@@ -926,14 +925,7 @@ export async function previewReviewedResume(
   );
 
   if (!response.ok) {
-    const errorData = await response
-      .json()
-      .catch(() => null);
-
-    throw new Error(
-      errorData?.detail
-        || "Failed to optimize reviewed resume",
-    );
+    await throwApiError(response, "Failed to optimize reviewed resume");
   }
 
   return response.json();
@@ -956,14 +948,7 @@ export async function downloadReviewedResumePdf(
   );
 
   if (!response.ok) {
-    const errorData = await response
-      .json()
-      .catch(() => null);
-
-    throw new Error(
-      errorData?.detail
-        || "Failed to generate reviewed resume PDF",
-    );
+    await throwApiError(response, "Failed to generate reviewed resume PDF");
   }
 
   return response.blob();

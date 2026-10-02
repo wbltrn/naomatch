@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
 import {
+  ApiError,
   downloadReviewedResumePdf,
   getJob,
   getProfile,
@@ -128,6 +129,12 @@ export default function JobDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tailorError, setTailorError] = useState<string | null>(null);
+  const [tailorErrorStatus, setTailorErrorStatus] = useState<number | null>(
+    null,
+  );
+  const [tailorErrorRetry, setTailorErrorRetry] = useState<
+    (() => void) | null
+  >(null);
 
   const [tailoring, setTailoring] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
@@ -193,6 +200,8 @@ export default function JobDetailPage() {
     try {
       setTailoring(true);
       setTailorError(null);
+      setTailorErrorStatus(null);
+      setTailorErrorRetry(null);
       setTailoredResume(null);
       setResumeDraft(null);
       setListDrafts({});
@@ -211,6 +220,8 @@ export default function JobDetailPage() {
       setTailorError(
         err instanceof Error ? err.message : "Unable to tailor resume.",
       );
+      setTailorErrorStatus(err instanceof ApiError ? err.status : null);
+      setTailorErrorRetry(() => handleTailorResume);
     } finally {
       setTailoring(false);
     }
@@ -262,6 +273,8 @@ export default function JobDetailPage() {
     setListDrafts(nextListDrafts);
     setEditingResume(true);
     setTailorError(null);
+    setTailorErrorStatus(null);
+    setTailorErrorRetry(null);
   }
 
   function handleCancelEditing() {
@@ -269,6 +282,8 @@ export default function JobDetailPage() {
     setListDrafts({});
     setEditingResume(false);
     setTailorError(null);
+    setTailorErrorStatus(null);
+    setTailorErrorRetry(null);
   }
 
   function handleEducationFieldChange(
@@ -790,6 +805,8 @@ export default function JobDetailPage() {
     try {
       setSavingEdits(true);
       setTailorError(null);
+      setTailorErrorStatus(null);
+      setTailorErrorRetry(null);
 
       const cleanedResume = prepareResumeForSave(resumeDraft);
 
@@ -809,6 +826,8 @@ export default function JobDetailPage() {
       setTailorError(
         err instanceof Error ? err.message : "Unable to save resume changes.",
       );
+      setTailorErrorStatus(err instanceof ApiError ? err.status : null);
+      setTailorErrorRetry(() => handleSaveEditing);
     } finally {
       setSavingEdits(false);
     }
@@ -835,6 +854,8 @@ export default function JobDetailPage() {
       setTailorError(
         err instanceof Error ? err.message : "Unable to load resume preview.",
       );
+      setTailorErrorStatus(err instanceof ApiError ? err.status : null);
+      setTailorErrorRetry(() => () => refreshPdfPreview(resume));
     } finally {
       setLoadingPdfPreview(false);
     }
@@ -848,6 +869,8 @@ export default function JobDetailPage() {
     try {
       setDownloadingPdf(true);
       setTailorError(null);
+      setTailorErrorStatus(null);
+      setTailorErrorRetry(null);
 
       const pdfBlob = await downloadReviewedResumePdf(jobId, tailoredResume);
 
@@ -873,6 +896,8 @@ export default function JobDetailPage() {
       setTailorError(
         err instanceof Error ? err.message : "Unable to download resume PDF.",
       );
+      setTailorErrorStatus(err instanceof ApiError ? err.status : null);
+      setTailorErrorRetry(() => handleDownloadPdf);
     } finally {
       setDownloadingPdf(false);
     }
@@ -963,7 +988,26 @@ export default function JobDetailPage() {
 
             {tailorError && (
               <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                {tailorError}
+                <p>{tailorError}</p>
+
+                {tailorErrorStatus === 404 && (
+                  <Link
+                    href="/vault"
+                    className="mt-2 inline-block font-medium underline"
+                  >
+                    Go to your Vault →
+                  </Link>
+                )}
+
+                {tailorErrorStatus === 503 && tailorErrorRetry && (
+                  <button
+                    type="button"
+                    onClick={tailorErrorRetry}
+                    className="mt-2 font-medium underline"
+                  >
+                    Try again
+                  </button>
+                )}
               </div>
             )}
 
