@@ -1,10 +1,13 @@
 import hashlib
 import json
+import logging
 import os
+import random
+import time
 
 from dotenv import load_dotenv
 from google import genai
-from google.genai import errors
+from google.genai import errors, types
 from sqlalchemy.orm import Session
 
 from app.models.resume_tailor_cache import (
@@ -21,11 +24,33 @@ from app.services.resume_validator import (
 load_dotenv()
 
 
+logger = logging.getLogger("naomatch.tailor")
+
+
+# Per-request timeout so a hung Gemini call cannot freeze the demo.
+GEMINI_REQUEST_TIMEOUT_MS = 60_000
+
 client = genai.Client(
     api_key=os.getenv(
         "GEMINI_API_KEY"
-    )
+    ),
+    http_options=types.HttpOptions(
+        timeout=GEMINI_REQUEST_TIMEOUT_MS
+    ),
 )
+
+# Models are tried in order. Edit this list, not the logic below.
+GEMINI_MODELS = [
+    "gemini-3.6-flash",
+    "gemini-3.8-flash",
+]
+
+# Retries per (model, mode) for transient server errors (5xx).
+GEMINI_MAX_ATTEMPTS = 3
+GEMINI_RETRY_BASE_DELAY_SECONDS = 2.0
+
+# Total wall-clock budget for one tailoring request.
+GEMINI_TOTAL_BUDGET_SECONDS = 150.0
 
 
 RESUME_TAILOR_CACHE: dict[
@@ -202,77 +227,14 @@ VAULT SECTION TYPE: {section_type}
     )
 
 
-def tailor_resume_content(
-    db: Session,
+def build_tailoring_prompt(
     job_title: str,
     job_description: str,
     vault_sections: list[dict],
-) -> TailoredResumeDocument:
-    cache_key = (
-        build_resume_tailor_cache_key(
-            job_title=job_title,
-            job_description=(
-                job_description
-            ),
-            vault_sections=(
-                vault_sections
-            ),
-        )
-    )
+) -> str:
+    vault_text = build_vault_text(vault_sections)
 
-    # -------------------------------------------------------------
-    # In-memory cache
-    # -------------------------------------------------------------
-
-    if (
-        cache_key
-        in RESUME_TAILOR_CACHE
-    ):
-        return RESUME_TAILOR_CACHE[
-            cache_key
-        ]
-
-    # -------------------------------------------------------------
-    # Database cache
-    # -------------------------------------------------------------
-
-    cached_record = (
-        db.query(
-            ResumeTailorCache
-        )
-        .filter(
-            ResumeTailorCache.cache_key
-            == cache_key
-        )
-        .first()
-    )
-
-    if cached_record is not None:
-        tailored_resume = (
-            TailoredResumeDocument
-            .model_validate_json(
-                cached_record
-                .tailored_resume
-            )
-        )
-
-        RESUME_TAILOR_CACHE[
-            cache_key
-        ] = tailored_resume
-
-        return tailored_resume
-
-    # -------------------------------------------------------------
-    # Build AI context
-    # -------------------------------------------------------------
-
-    vault_text = (
-        build_vault_text(
-            vault_sections
-        )
-    )
-
-    prompt = f"""
+    return f"""
 You are building a highly targeted professional resume from a candidate's
 trusted Experience Vault.
 
@@ -469,35 +431,291 @@ Return a TailoredResumeDocument containing:
 - alternate_items
 """
 
+
+# -----------------------------------------------------------------
+# Gemini generation with retries, mode fallback, and model fallback
+# -----------------------------------------------------------------
+
+# Overridable in tests so retries do not actually sleep.
+_sleep = time.sleep
+
+
+def _describe_gemini_error(error: Exception) -> str:
+    return (
+        f"{type(error).__name__} "
+        f"code={getattr(error, 'code', None)} "
+        f"status={getattr(error, 'status', None)}: "
+        f"{getattr(error, 'message', None) or error}"
+    )
+
+
+def _build_plain_json_prompt(prompt: str) -> str:
+    schema = json.dumps(
+        TailoredResumeDocument.model_json_schema()
+    )
+
+    return (
+        f"{prompt}\n\n"
+        "Return ONLY a single JSON object that conforms to this "
+        "JSON Schema. Do not wrap it in markdown fences and do not "
+        f"add any commentary.\n\nJSON SCHEMA:\n{schema}"
+    )
+
+
+def _call_gemini(
+    model_name: str,
+    mode: str,
+    prompt: str,
+):
+    if mode == "structured":
+        return client.models.generate_content(
+            model=model_name,
+            contents=prompt,
+            config={
+                "response_mime_type": "application/json",
+                "response_schema": TailoredResumeDocument,
+            },
+        )
+
+    # "plain_json": a lighter request with no schema-constrained
+    # decoding. The schema is described in the prompt instead and
+    # the result is validated with Pydantic afterwards.
+    return client.models.generate_content(
+        model=model_name,
+        contents=_build_plain_json_prompt(prompt),
+        config={
+            "response_mime_type": "application/json",
+        },
+    )
+
+
+def generate_tailored_resume_json(prompt: str) -> str:
+    """
+    Ask Gemini for a TailoredResumeDocument and return validated JSON
+    text.
+
+    For each model in GEMINI_MODELS we try:
+      1. schema-constrained output, retrying transient 5xx errors
+         with backoff
+      2. a lighter plain-JSON request, validated with Pydantic
+
+    Every failure is logged with its real code/status/message so the
+    backend terminal shows what actually went wrong. Only after every
+    option fails do we raise the user-facing error.
+    """
+    started = time.monotonic()
+    failures: list[str] = []
+    only_quota_failures = True
+
+    for model_name in GEMINI_MODELS:
+        skip_model = False
+
+        for mode in ("structured", "plain_json"):
+            if skip_model:
+                break
+
+            for attempt in range(1, GEMINI_MAX_ATTEMPTS + 1):
+                if (
+                    time.monotonic() - started
+                    > GEMINI_TOTAL_BUDGET_SECONDS
+                ):
+                    logger.warning(
+                        "Gemini time budget exhausted after %s",
+                        failures,
+                    )
+                    raise ResumeTailoringUnavailableError(
+                        "Resume tailoring is taking too long "
+                        "because the AI service is busy. "
+                        "Please try again in a minute."
+                    )
+
+                label = (
+                    f"model={model_name} mode={mode} "
+                    f"attempt={attempt}/{GEMINI_MAX_ATTEMPTS}"
+                )
+
+                try:
+                    response = _call_gemini(
+                        model_name, mode, prompt
+                    )
+
+                    text = getattr(response, "text", None)
+
+                    if not text:
+                        raise ValueError("empty response text")
+
+                    # Reject malformed output here so we fall
+                    # through to the next mode/model instead of
+                    # failing later in the request.
+                    TailoredResumeDocument.model_validate_json(
+                        text
+                    )
+
+                    if failures:
+                        logger.info(
+                            "Gemini succeeded (%s) after earlier "
+                            "failures: %s",
+                            label,
+                            failures,
+                        )
+
+                    return text
+
+                except errors.ServerError as error:
+                    only_quota_failures = False
+                    failures.append(
+                        f"{label} {_describe_gemini_error(error)}"
+                    )
+                    logger.warning(
+                        "Gemini server error (%s): %s",
+                        label,
+                        _describe_gemini_error(error),
+                    )
+
+                    if attempt < GEMINI_MAX_ATTEMPTS:
+                        _sleep(
+                            GEMINI_RETRY_BASE_DELAY_SECONDS
+                            * (2 ** (attempt - 1))
+                            + random.uniform(0, 1)
+                        )
+                        continue
+
+                    break  # out of retries: next mode / model
+
+                except errors.ClientError as error:
+                    code = getattr(error, "code", None)
+                    failures.append(
+                        f"{label} {_describe_gemini_error(error)}"
+                    )
+                    logger.warning(
+                        "Gemini client error (%s): %s",
+                        label,
+                        _describe_gemini_error(error),
+                    )
+
+                    if code != 429:
+                        only_quota_failures = False
+
+                    if code in (401, 403, 404, 429):
+                        # Bad key, model unavailable, or quota:
+                        # retrying this model will not help.
+                        skip_model = True
+
+                    # 400 (e.g. schema rejected) falls through to
+                    # the next mode.
+                    break
+
+                except Exception as error:
+                    # Timeouts, connection resets, malformed JSON,
+                    # empty responses, schema validation failures.
+                    only_quota_failures = False
+                    failures.append(
+                        f"{label} {_describe_gemini_error(error)}"
+                    )
+                    logger.warning(
+                        "Gemini request failed (%s): %s",
+                        label,
+                        _describe_gemini_error(error),
+                    )
+
+                    if attempt < GEMINI_MAX_ATTEMPTS:
+                        _sleep(
+                            GEMINI_RETRY_BASE_DELAY_SECONDS
+                            * (2 ** (attempt - 1))
+                        )
+                        continue
+
+                    break
+
+    logger.error(
+        "All Gemini options failed: %s",
+        failures,
+    )
+
+    if only_quota_failures:
+        raise ResumeTailoringUnavailableError(
+            "Resume tailoring is temporarily unavailable "
+            "because the AI service quota was reached."
+        )
+
+    raise ResumeTailoringUnavailableError(
+        "Resume tailoring is temporarily unavailable "
+        "because the AI service is busy. "
+        "Please try again in a minute."
+    )
+
+
+def tailor_resume_content(
+    db: Session,
+    job_title: str,
+    job_description: str,
+    vault_sections: list[dict],
+) -> TailoredResumeDocument:
+    cache_key = (
+        build_resume_tailor_cache_key(
+            job_title=job_title,
+            job_description=(
+                job_description
+            ),
+            vault_sections=(
+                vault_sections
+            ),
+        )
+    )
+
     # -------------------------------------------------------------
-    # Gemini request
+    # In-memory cache
     # -------------------------------------------------------------
 
-    try:
-        response = (
-            client.models.generate_content(
-                model="gemini-3.6-flash",
-                contents=prompt,
-                config={
-                    "response_mime_type": (
-                        "application/json"
-                    ),
-                    "response_schema": (
-                        TailoredResumeDocument
-                    ),
-                },
+    if (
+        cache_key
+        in RESUME_TAILOR_CACHE
+    ):
+        return RESUME_TAILOR_CACHE[
+            cache_key
+        ]
+
+    # -------------------------------------------------------------
+    # Database cache
+    # -------------------------------------------------------------
+
+    cached_record = (
+        db.query(
+            ResumeTailorCache
+        )
+        .filter(
+            ResumeTailorCache.cache_key
+            == cache_key
+        )
+        .first()
+    )
+
+    if cached_record is not None:
+        tailored_resume = (
+            TailoredResumeDocument
+            .model_validate_json(
+                cached_record
+                .tailored_resume
             )
         )
 
-    except errors.ClientError as error:
-        raise (
-            ResumeTailoringUnavailableError(
-                "Resume tailoring is "
-                "temporarily unavailable "
-                "because the AI service "
-                "quota was reached."
-            )
-        ) from error
+        RESUME_TAILOR_CACHE[
+            cache_key
+        ] = tailored_resume
+
+        return tailored_resume
+
+    # -------------------------------------------------------------
+    # Gemini request (retries, fallback models, readable errors)
+    # -------------------------------------------------------------
+
+    prompt = build_tailoring_prompt(
+        job_title=job_title,
+        job_description=job_description,
+        vault_sections=vault_sections,
+    )
+
+    response_text = generate_tailored_resume_json(prompt)
 
     # -------------------------------------------------------------
     # Parse + deterministically validate Gemini output
@@ -506,7 +724,7 @@ Return a TailoredResumeDocument containing:
     tailored_resume = (
         TailoredResumeDocument
         .model_validate_json(
-            response.text
+            response_text
         )
     )
 
