@@ -12,9 +12,11 @@ import {
   previewTailoredResume,
   type OptimizedResumePreviewResponse,
   type ProfileData,
+  type TailoredAlternateItem,
   type TailoredEducationItem,
   type TailoredResumeItem,
   type TailoredResumeResponse,
+  type TailoredResumeSection,
   type TailoredSkillGroup,
 } from "@/lib/api";
 
@@ -71,6 +73,49 @@ function technologiesKey(sectionIndex: number, itemIndex: number) {
 
 function skillsKey(sectionIndex: number, itemIndex: number) {
   return `${sectionIndex}-${itemIndex}-skills`;
+}
+
+type ListDraftField = "coursework" | "honors" | "technologies" | "skills";
+
+// Which listDrafts fields a section type owns, so item add/remove/move can
+// reindex them. Section types absent here never populate listDrafts.
+const LIST_DRAFT_FIELDS: Partial<Record<string, ListDraftField[]>> = {
+  education: ["coursework", "honors"],
+  skills: ["skills"],
+  technical_skills: ["skills"],
+  projects: ["technologies"],
+  project: ["technologies"],
+};
+
+function listDraftKeyFor(
+  field: ListDraftField,
+  sectionIndex: number,
+  itemIndex: number,
+) {
+  if (field === "skills") {
+    return skillsKey(sectionIndex, itemIndex);
+  }
+
+  if (field === "technologies") {
+    return technologiesKey(sectionIndex, itemIndex);
+  }
+
+  return educationListKey(sectionIndex, itemIndex, field);
+}
+
+function isAlternateAlreadyInResume(
+  alternate: TailoredAlternateItem,
+  resume: TailoredResumeResponse,
+) {
+  return resume.sections.some((section) =>
+    section.items.some(
+      (item) =>
+        "id" in item &&
+        item.id === alternate.item.id &&
+        "source_section_type" in item &&
+        item.source_section_type === alternate.item.source_section_type,
+    ),
+  );
 }
 
 export default function JobDetailPage() {
@@ -370,6 +415,254 @@ export default function JobDetailPage() {
     });
   }
 
+  // listDrafts is keyed by sectionIndex-itemIndex-field (see handleStartEditing),
+  // so moving/removing items must reindex it in lockstep or fields like
+  // technologies/skills/coursework silently attach to the wrong item.
+  function remapListDraftsForSection(
+    sectionType: string,
+    sectionIndex: number,
+    indexMap: Array<number | null>,
+  ) {
+    const fields = LIST_DRAFT_FIELDS[sectionType];
+
+    if (!fields) {
+      return;
+    }
+
+    setListDrafts((current) => {
+      const next = { ...current };
+
+      fields.forEach((field) => {
+        const oldValues = indexMap.map(
+          (_, oldIndex) =>
+            current[listDraftKeyFor(field, sectionIndex, oldIndex)] ?? "",
+        );
+
+        indexMap.forEach((_, oldIndex) => {
+          delete next[listDraftKeyFor(field, sectionIndex, oldIndex)];
+        });
+
+        indexMap.forEach((newIndex, oldIndex) => {
+          if (newIndex !== null) {
+            next[listDraftKeyFor(field, sectionIndex, newIndex)] =
+              oldValues[oldIndex];
+          }
+        });
+      });
+
+      return next;
+    });
+  }
+
+  function handleRemoveItem(
+    sectionIndex: number,
+    sectionType: string,
+    itemIndex: number,
+    itemCount: number,
+  ) {
+    if (!window.confirm("Remove this entry from the resume?")) {
+      return;
+    }
+
+    setResumeDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const updated = cloneResume(current);
+
+      updated.sections[sectionIndex].items.splice(itemIndex, 1);
+
+      return updated;
+    });
+
+    remapListDraftsForSection(
+      sectionType,
+      sectionIndex,
+      Array.from({ length: itemCount }, (_, index) =>
+        index < itemIndex ? index : index === itemIndex ? null : index - 1,
+      ),
+    );
+  }
+
+  function handleMoveItem(
+    sectionIndex: number,
+    sectionType: string,
+    itemIndex: number,
+    direction: "up" | "down",
+    itemCount: number,
+  ) {
+    const targetIndex = direction === "up" ? itemIndex - 1 : itemIndex + 1;
+
+    if (targetIndex < 0 || targetIndex >= itemCount) {
+      return;
+    }
+
+    setResumeDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const updated = cloneResume(current);
+      const items = updated.sections[sectionIndex].items;
+
+      [items[itemIndex], items[targetIndex]] = [
+        items[targetIndex],
+        items[itemIndex],
+      ];
+
+      return updated;
+    });
+
+    const indexMap = Array.from({ length: itemCount }, (_, index) => index);
+
+    indexMap[itemIndex] = targetIndex;
+    indexMap[targetIndex] = itemIndex;
+
+    remapListDraftsForSection(sectionType, sectionIndex, indexMap);
+  }
+
+  function handleRemoveBullet(
+    sectionIndex: number,
+    itemIndex: number,
+    bulletIndex: number,
+  ) {
+    setResumeDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const updated = cloneResume(current);
+      const item = updated.sections[sectionIndex].items[itemIndex];
+
+      if ("bullets" in item && item.bullets) {
+        item.bullets.splice(bulletIndex, 1);
+      }
+
+      return updated;
+    });
+  }
+
+  function handleMoveBullet(
+    sectionIndex: number,
+    itemIndex: number,
+    bulletIndex: number,
+    direction: "up" | "down",
+  ) {
+    setResumeDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const updated = cloneResume(current);
+      const item = updated.sections[sectionIndex].items[itemIndex];
+
+      if (!("bullets" in item) || !item.bullets) {
+        return current;
+      }
+
+      const targetIndex =
+        direction === "up" ? bulletIndex - 1 : bulletIndex + 1;
+
+      if (targetIndex < 0 || targetIndex >= item.bullets.length) {
+        return current;
+      }
+
+      [item.bullets[bulletIndex], item.bullets[targetIndex]] = [
+        item.bullets[targetIndex],
+        item.bullets[bulletIndex],
+      ];
+
+      return updated;
+    });
+  }
+
+  // Only ever inserts a blank string for the user to type into -- never AI
+  // content -- so this does not touch the Vault-grounding rule.
+  function handleAddBullet(sectionIndex: number, itemIndex: number) {
+    setResumeDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const updated = cloneResume(current);
+      const item = updated.sections[sectionIndex].items[itemIndex];
+
+      if ("bullets" in item) {
+        item.bullets = [...(item.bullets ?? []), ""];
+      }
+
+      return updated;
+    });
+  }
+
+  function handleAddItemFromAlternate(alternateIndex: number) {
+    if (!resumeDraft) {
+      return;
+    }
+
+    const alternate = resumeDraft.alternate_items[alternateIndex];
+
+    if (!alternate) {
+      return;
+    }
+
+    const existingSectionIndex = resumeDraft.sections.findIndex(
+      (section) => section.section_type === alternate.section_type,
+    );
+
+    const targetSectionIndex =
+      existingSectionIndex === -1
+        ? resumeDraft.sections.length
+        : existingSectionIndex;
+
+    const newItemIndex =
+      existingSectionIndex === -1
+        ? 0
+        : resumeDraft.sections[existingSectionIndex].items.length;
+
+    setResumeDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const updated = cloneResume(current);
+      const promotedItem = structuredClone(alternate.item);
+
+      if (existingSectionIndex === -1) {
+        updated.sections.push({
+          section_type: alternate.section_type,
+          title: alternate.section_title,
+          items: [promotedItem],
+        } as TailoredResumeSection);
+
+        if (!updated.section_order.includes(alternate.section_type)) {
+          updated.section_order.push(alternate.section_type);
+        }
+      } else {
+        (
+          updated.sections[existingSectionIndex].items as TailoredResumeItem[]
+        ).push(promotedItem);
+      }
+
+      updated.alternate_items.splice(alternateIndex, 1);
+
+      return updated;
+    });
+
+    if (
+      alternate.section_type === "projects" ||
+      alternate.section_type === "project"
+    ) {
+      setListDrafts((current) => ({
+        ...current,
+        [technologiesKey(targetSectionIndex, newItemIndex)]: (
+          alternate.item.technologies ?? []
+        ).join(", "),
+      }));
+    }
+  }
+
   function prepareResumeForSave(
     draft: TailoredResumeResponse,
   ): TailoredResumeResponse {
@@ -477,6 +770,14 @@ export default function JobDetailPage() {
         }
       });
     });
+
+    cleaned.sections = cleaned.sections.filter(
+      (section) => section.items.length > 0,
+    );
+
+    cleaned.section_order = cleaned.section_order.filter((sectionType) =>
+      cleaned.sections.some((section) => section.section_type === sectionType),
+    );
 
     return cleaned;
   }
@@ -863,6 +1164,62 @@ export default function JobDetailPage() {
                                 }
                                 className="grid gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-2"
                               >
+                                <div className="flex justify-end gap-1.5 sm:col-span-2">
+                                  <button
+                                    type="button"
+                                    title="Move up"
+                                    disabled={itemIndex === 0}
+                                    onClick={() =>
+                                      handleMoveItem(
+                                        sectionIndex,
+                                        section.section_type,
+                                        itemIndex,
+                                        "up",
+                                        section.items.length,
+                                      )
+                                    }
+                                    className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                  >
+                                    ↑
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    title="Move down"
+                                    disabled={
+                                      itemIndex === section.items.length - 1
+                                    }
+                                    onClick={() =>
+                                      handleMoveItem(
+                                        sectionIndex,
+                                        section.section_type,
+                                        itemIndex,
+                                        "down",
+                                        section.items.length,
+                                      )
+                                    }
+                                    className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                  >
+                                    ↓
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    title="Remove entry"
+                                    onClick={() =>
+                                      handleRemoveItem(
+                                        sectionIndex,
+                                        section.section_type,
+                                        itemIndex,
+                                        section.items.length,
+                                      )
+                                    }
+                                    className="rounded-md border border-red-200 bg-white px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+
                                 {[
                                   ["School", "school", item.school],
                                   ["Location", "location", item.location ?? ""],
@@ -975,6 +1332,62 @@ export default function JobDetailPage() {
                                 key={`${section.section_type}-${itemIndex}`}
                                 className="grid gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-[220px_1fr]"
                               >
+                                <div className="flex justify-end gap-1.5 sm:col-span-2">
+                                  <button
+                                    type="button"
+                                    title="Move up"
+                                    disabled={itemIndex === 0}
+                                    onClick={() =>
+                                      handleMoveItem(
+                                        sectionIndex,
+                                        section.section_type,
+                                        itemIndex,
+                                        "up",
+                                        section.items.length,
+                                      )
+                                    }
+                                    className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                  >
+                                    ↑
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    title="Move down"
+                                    disabled={
+                                      itemIndex === section.items.length - 1
+                                    }
+                                    onClick={() =>
+                                      handleMoveItem(
+                                        sectionIndex,
+                                        section.section_type,
+                                        itemIndex,
+                                        "down",
+                                        section.items.length,
+                                      )
+                                    }
+                                    className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                  >
+                                    ↓
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    title="Remove entry"
+                                    onClick={() =>
+                                      handleRemoveItem(
+                                        sectionIndex,
+                                        section.section_type,
+                                        itemIndex,
+                                        section.items.length,
+                                      )
+                                    }
+                                    className="rounded-md border border-red-200 bg-white px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+
                                 <label>
                                   <span className={labelClass}>Category</span>
 
@@ -1028,6 +1441,62 @@ export default function JobDetailPage() {
                                 }
                                 className="space-y-3 rounded-lg border border-gray-200 p-4"
                               >
+                                <div className="flex justify-end gap-1.5">
+                                  <button
+                                    type="button"
+                                    title="Move up"
+                                    disabled={itemIndex === 0}
+                                    onClick={() =>
+                                      handleMoveItem(
+                                        sectionIndex,
+                                        section.section_type,
+                                        itemIndex,
+                                        "up",
+                                        section.items.length,
+                                      )
+                                    }
+                                    className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                  >
+                                    ↑
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    title="Move down"
+                                    disabled={
+                                      itemIndex === section.items.length - 1
+                                    }
+                                    onClick={() =>
+                                      handleMoveItem(
+                                        sectionIndex,
+                                        section.section_type,
+                                        itemIndex,
+                                        "down",
+                                        section.items.length,
+                                      )
+                                    }
+                                    className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                  >
+                                    ↓
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    title="Remove entry"
+                                    onClick={() =>
+                                      handleRemoveItem(
+                                        sectionIndex,
+                                        section.section_type,
+                                        itemIndex,
+                                        section.items.length,
+                                      )
+                                    }
+                                    className="rounded-md border border-red-200 bg-white px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+
                                 <div className="grid gap-3 sm:grid-cols-2">
                                   <label>
                                     <span className={labelClass}>
@@ -1108,26 +1577,96 @@ export default function JobDetailPage() {
                                   ))}
                                 </div>
 
-                                {item.bullets && item.bullets.length > 0 && (
+                                {"bullets" in item && (
                                   <div className="space-y-2">
                                     <span className={labelClass}>Bullets</span>
 
-                                    {item.bullets.map((bullet, bulletIndex) => (
-                                      <textarea
-                                        key={bulletIndex}
-                                        value={bullet}
-                                        onChange={(event) =>
-                                          handleBulletChange(
-                                            sectionIndex,
-                                            itemIndex,
-                                            bulletIndex,
-                                            event.target.value,
-                                          )
-                                        }
-                                        rows={3}
-                                        className={`${inputClass} resize-y leading-5`}
-                                      />
-                                    ))}
+                                    {(item.bullets ?? []).map(
+                                      (bullet, bulletIndex) => (
+                                        <div
+                                          key={bulletIndex}
+                                          className="flex items-start gap-2"
+                                        >
+                                          <textarea
+                                            value={bullet}
+                                            onChange={(event) =>
+                                              handleBulletChange(
+                                                sectionIndex,
+                                                itemIndex,
+                                                bulletIndex,
+                                                event.target.value,
+                                              )
+                                            }
+                                            rows={3}
+                                            className={`${inputClass} flex-1 resize-y leading-5`}
+                                          />
+
+                                          <div className="flex flex-col gap-1">
+                                            <button
+                                              type="button"
+                                              title="Move bullet up"
+                                              disabled={bulletIndex === 0}
+                                              onClick={() =>
+                                                handleMoveBullet(
+                                                  sectionIndex,
+                                                  itemIndex,
+                                                  bulletIndex,
+                                                  "up",
+                                                )
+                                              }
+                                              className="rounded-md border border-gray-300 bg-white px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                            >
+                                              ↑
+                                            </button>
+
+                                            <button
+                                              type="button"
+                                              title="Move bullet down"
+                                              disabled={
+                                                bulletIndex ===
+                                                (item.bullets?.length ?? 1) - 1
+                                              }
+                                              onClick={() =>
+                                                handleMoveBullet(
+                                                  sectionIndex,
+                                                  itemIndex,
+                                                  bulletIndex,
+                                                  "down",
+                                                )
+                                              }
+                                              className="rounded-md border border-gray-300 bg-white px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                            >
+                                              ↓
+                                            </button>
+
+                                            <button
+                                              type="button"
+                                              title="Remove bullet"
+                                              onClick={() =>
+                                                handleRemoveBullet(
+                                                  sectionIndex,
+                                                  itemIndex,
+                                                  bulletIndex,
+                                                )
+                                              }
+                                              className="rounded-md border border-red-200 bg-white px-2 py-0.5 text-xs text-red-600 hover:bg-red-50"
+                                            >
+                                              ✕
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ),
+                                    )}
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleAddBullet(sectionIndex, itemIndex)
+                                      }
+                                      className="text-xs font-medium text-blue-600 hover:underline"
+                                    >
+                                      + Add bullet
+                                    </button>
                                   </div>
                                 )}
                               </div>
@@ -1149,6 +1688,62 @@ export default function JobDetailPage() {
                                   }
                                   className="space-y-3 rounded-lg border border-gray-200 p-4"
                                 >
+                                  <div className="flex justify-end gap-1.5">
+                                    <button
+                                      type="button"
+                                      title="Move up"
+                                      disabled={itemIndex === 0}
+                                      onClick={() =>
+                                        handleMoveItem(
+                                          sectionIndex,
+                                          section.section_type,
+                                          itemIndex,
+                                          "up",
+                                          section.items.length,
+                                        )
+                                      }
+                                      className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                    >
+                                      ↑
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      title="Move down"
+                                      disabled={
+                                        itemIndex === section.items.length - 1
+                                      }
+                                      onClick={() =>
+                                        handleMoveItem(
+                                          sectionIndex,
+                                          section.section_type,
+                                          itemIndex,
+                                          "down",
+                                          section.items.length,
+                                        )
+                                      }
+                                      className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                    >
+                                      ↓
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      title="Remove entry"
+                                      onClick={() =>
+                                        handleRemoveItem(
+                                          sectionIndex,
+                                          section.section_type,
+                                          itemIndex,
+                                          section.items.length,
+                                        )
+                                      }
+                                      className="rounded-md border border-red-200 bg-white px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+
                                   <div className="grid gap-3 sm:grid-cols-2">
                                     {[
                                       ["Title", "title", item.title ?? ""],
@@ -1217,38 +1812,212 @@ export default function JobDetailPage() {
                                     ))}
                                   </div>
 
-                                  {item.bullets && item.bullets.length > 0 && (
+                                  {"bullets" in item && (
                                     <div className="space-y-2">
                                       <span className={labelClass}>
                                         Bullets
                                       </span>
 
-                                      {item.bullets.map(
+                                      {(item.bullets ?? []).map(
                                         (bullet, bulletIndex) => (
-                                          <textarea
+                                          <div
                                             key={bulletIndex}
-                                            value={bullet}
-                                            onChange={(event) =>
-                                              handleBulletChange(
-                                                sectionIndex,
-                                                itemIndex,
-                                                bulletIndex,
-                                                event.target.value,
-                                              )
-                                            }
-                                            rows={3}
-                                            className={`${inputClass} resize-y leading-5`}
-                                          />
+                                            className="flex items-start gap-2"
+                                          >
+                                            <textarea
+                                              value={bullet}
+                                              onChange={(event) =>
+                                                handleBulletChange(
+                                                  sectionIndex,
+                                                  itemIndex,
+                                                  bulletIndex,
+                                                  event.target.value,
+                                                )
+                                              }
+                                              rows={3}
+                                              className={`${inputClass} flex-1 resize-y leading-5`}
+                                            />
+
+                                            <div className="flex flex-col gap-1">
+                                              <button
+                                                type="button"
+                                                title="Move bullet up"
+                                                disabled={bulletIndex === 0}
+                                                onClick={() =>
+                                                  handleMoveBullet(
+                                                    sectionIndex,
+                                                    itemIndex,
+                                                    bulletIndex,
+                                                    "up",
+                                                  )
+                                                }
+                                                className="rounded-md border border-gray-300 bg-white px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                              >
+                                                ↑
+                                              </button>
+
+                                              <button
+                                                type="button"
+                                                title="Move bullet down"
+                                                disabled={
+                                                  bulletIndex ===
+                                                  (item.bullets?.length ?? 1) -
+                                                    1
+                                                }
+                                                onClick={() =>
+                                                  handleMoveBullet(
+                                                    sectionIndex,
+                                                    itemIndex,
+                                                    bulletIndex,
+                                                    "down",
+                                                  )
+                                                }
+                                                className="rounded-md border border-gray-300 bg-white px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                              >
+                                                ↓
+                                              </button>
+
+                                              <button
+                                                type="button"
+                                                title="Remove bullet"
+                                                onClick={() =>
+                                                  handleRemoveBullet(
+                                                    sectionIndex,
+                                                    itemIndex,
+                                                    bulletIndex,
+                                                  )
+                                                }
+                                                className="rounded-md border border-red-200 bg-white px-2 py-0.5 text-xs text-red-600 hover:bg-red-50"
+                                              >
+                                                ✕
+                                              </button>
+                                            </div>
+                                          </div>
                                         ),
                                       )}
+
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleAddBullet(
+                                            sectionIndex,
+                                            itemIndex,
+                                          )
+                                        }
+                                        className="text-xs font-medium text-blue-600 hover:underline"
+                                      >
+                                        + Add bullet
+                                      </button>
                                     </div>
                                   )}
                                 </div>
                               ))}
                             </div>
                           )}
+
+                        {displayedResume.alternate_items
+                          .map((alternate, alternateIndex) => ({
+                            alternate,
+                            alternateIndex,
+                          }))
+                          .filter(
+                            ({ alternate }) =>
+                              alternate.section_type ===
+                                section.section_type &&
+                              !isAlternateAlreadyInResume(
+                                alternate,
+                                displayedResume,
+                              ),
+                          )
+                          .map(({ alternate, alternateIndex }) => (
+                            <div
+                              key={alternateIndex}
+                              className="flex items-center justify-between gap-3 rounded-md border border-dashed border-gray-300 p-2 text-xs"
+                            >
+                              <span>
+                                <span className="font-medium">
+                                  {alternate.item.title ??
+                                    alternate.item.name ??
+                                    "Untitled"}
+                                </span>
+                                <span className="text-gray-500">
+                                  {" "}
+                                  — {alternate.reason}
+                                </span>
+                              </span>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleAddItemFromAlternate(alternateIndex)
+                                }
+                                className="shrink-0 font-medium text-blue-600 hover:underline"
+                              >
+                                + Add from Vault
+                              </button>
+                            </div>
+                          ))}
                       </section>
                     ))}
+
+                    {displayedResume.alternate_items.some(
+                      ({ section_type }) =>
+                        !displayedResume.sections.some(
+                          (section) => section.section_type === section_type,
+                        ),
+                    ) && (
+                      <section className="space-y-3">
+                        <h3 className="border-b border-gray-900 pb-0.5 text-sm font-semibold uppercase tracking-wide text-gray-900">
+                          More from your Vault
+                        </h3>
+
+                        {displayedResume.alternate_items
+                          .map((alternate, alternateIndex) => ({
+                            alternate,
+                            alternateIndex,
+                          }))
+                          .filter(
+                            ({ alternate }) =>
+                              !displayedResume.sections.some(
+                                (section) =>
+                                  section.section_type ===
+                                  alternate.section_type,
+                              ) &&
+                              !isAlternateAlreadyInResume(
+                                alternate,
+                                displayedResume,
+                              ),
+                          )
+                          .map(({ alternate, alternateIndex }) => (
+                            <div
+                              key={alternateIndex}
+                              className="flex items-center justify-between gap-3 rounded-md border border-dashed border-gray-300 p-2 text-xs"
+                            >
+                              <span>
+                                <span className="font-medium">
+                                  {alternate.item.title ??
+                                    alternate.item.name ??
+                                    "Untitled"}
+                                </span>
+                                <span className="text-gray-500">
+                                  {" "}
+                                  — {alternate.reason}
+                                </span>
+                              </span>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleAddItemFromAlternate(alternateIndex)
+                                }
+                                className="shrink-0 font-medium text-blue-600 hover:underline"
+                              >
+                                + Add from Vault
+                              </button>
+                            </div>
+                          ))}
+                      </section>
+                    )}
                   </div>
                 )}
               </section>
