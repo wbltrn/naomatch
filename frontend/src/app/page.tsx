@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   checkBackend,
@@ -1168,6 +1169,13 @@ export default function Home() {
                 <p>{job.company}</p>
 
                 {job.location && <p>{job.location}</p>}
+
+                <Link
+                  href={`/jobs/${job.id}`}
+                  className="mt-1 block underline"
+                >
+                  Tailor Resume →
+                </Link>
 
                 {job.job_url && (
                   <a

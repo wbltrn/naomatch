@@ -890,7 +890,7 @@ export default function JobDetailPage() {
     <main className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="mx-auto max-w-5xl">
         <Link
-          href="/jobs"
+          href="/"
           className="text-sm font-medium text-gray-600 hover:text-gray-900"
         >
           ← Back to Jobs
