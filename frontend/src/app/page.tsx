@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   checkBackend,
   createApplication,
@@ -79,6 +79,28 @@ export default function Home() {
   const [applications, setApplications] = useState<any[]>([]);
   const [applicationFormMessage, setApplicationFormMessage] = useState("");
 
+  const messageTimeouts = useRef<Record<string, ReturnType<typeof setTimeout>>>(
+    {},
+  );
+
+  // Submitting the same form again before a prior auto-clear timer fires
+  // would otherwise let the old timer wipe out the newer message early.
+  function showTemporaryMessage(
+    key: string,
+    setMessage: (value: string) => void,
+    message: string,
+  ) {
+    setMessage(message);
+
+    if (messageTimeouts.current[key]) {
+      clearTimeout(messageTimeouts.current[key]);
+    }
+
+    messageTimeouts.current[key] = setTimeout(() => {
+      setMessage("");
+    }, 5000);
+  }
+
   useEffect(() => {
     async function loadExperiences() {
       try {
@@ -105,18 +127,20 @@ export default function Home() {
       try {
         const data = await getApplications();
         setApplications(data);
-        setApplicationDeleteMessage("Application deleted successfully.");
 
-        setTimeout(() => {
-          setApplicationDeleteMessage("");
-        }, 5000);
+        showTemporaryMessage(
+          "applicationDelete",
+          setApplicationDeleteMessage,
+          "Application deleted successfully.",
+        );
       } catch (error) {
         console.error(error);
-        setApplicationDeleteMessage("Unable to delete application.");
 
-        setTimeout(() => {
-          setApplicationDeleteMessage("");
-        }, 5000);
+        showTemporaryMessage(
+          "applicationDelete",
+          setApplicationDeleteMessage,
+          "Unable to delete application.",
+        );
       }
     }
 
@@ -197,18 +221,17 @@ export default function Home() {
       });
       setEditingExperienceId(null);
       setIsCurrent(false);
-      setFormMessage("Experience saved successfully.");
 
-      setTimeout(() => {
-        setFormMessage("");
-      }, 5000);
+      showTemporaryMessage(
+        "form",
+        setFormMessage,
+        "Experience saved successfully.",
+      );
       setBullets([""]);
     } catch (error) {
       console.error(error);
-      setFormMessage("Unable to save experience.");
-      setTimeout(() => {
-        setFormMessage("");
-      }, 5000);
+
+      showTemporaryMessage("form", setFormMessage, "Unable to save experience.");
     }
   }
 
@@ -232,16 +255,19 @@ export default function Home() {
           (experience) => experience.id !== experienceId,
         ),
       );
-      setDeleteMessage("Experience deleted successfully.");
-      setTimeout(() => {
-        setDeleteMessage("");
-      }, 5000);
+      showTemporaryMessage(
+        "delete",
+        setDeleteMessage,
+        "Experience deleted successfully.",
+      );
     } catch (error) {
       console.error(error);
-      setDeleteMessage("Unable to delete experience.");
-      setTimeout(() => {
-        setDeleteMessage("");
-      }, 5000);
+
+      showTemporaryMessage(
+        "delete",
+        setDeleteMessage,
+        "Unable to delete experience.",
+      );
     }
   }
 
@@ -352,17 +378,20 @@ export default function Home() {
         description: "",
       });
       setEditingJobId(null);
-      setJobFormMessage("Job posting saved successfully.");
 
-      setTimeout(() => {
-        setJobFormMessage("");
-      }, 5000);
+      showTemporaryMessage(
+        "jobForm",
+        setJobFormMessage,
+        "Job posting saved successfully.",
+      );
     } catch (error) {
       console.error(error);
-      setJobFormMessage("Unable to save job posting.");
-      setTimeout(() => {
-        setJobFormMessage("");
-      }, 5000);
+
+      showTemporaryMessage(
+        "jobForm",
+        setJobFormMessage,
+        "Unable to save job posting.",
+      );
     }
   }
 
@@ -384,18 +413,19 @@ export default function Home() {
       setJobs((currentJobs: any[]) =>
         currentJobs.filter((job) => job.id !== jobId),
       );
-      setJobDeleteMessage("Job posting deleted successfully.");
-
-      setTimeout(() => {
-        setJobDeleteMessage("");
-      }, 5000);
+      showTemporaryMessage(
+        "jobDelete",
+        setJobDeleteMessage,
+        "Job posting deleted successfully.",
+      );
     } catch (error) {
       console.error(error);
-      setJobDeleteMessage("Unable to delete job posting.");
 
-      setTimeout(() => {
-        setJobDeleteMessage("");
-      }, 5000);
+      showTemporaryMessage(
+        "jobDelete",
+        setJobDeleteMessage,
+        "Unable to delete job posting.",
+      );
     }
   }
 
@@ -429,13 +459,11 @@ export default function Home() {
     setApplicationDeleteMessage("");
 
     if (!applicationFormData.job_id) {
-      setApplicationFormMessage(
+      showTemporaryMessage(
+        "applicationForm",
+        setApplicationFormMessage,
         "Please select a job before tracking an application.",
       );
-
-      setTimeout(() => {
-        setApplicationFormMessage("");
-      }, 5000);
 
       return;
     }
@@ -478,15 +506,11 @@ export default function Home() {
     } catch (error) {
       console.error(error);
 
-      if (error instanceof Error) {
-        setApplicationFormMessage(error.message);
-      } else {
-        setApplicationFormMessage("Unable to track application.");
-      }
-
-      setTimeout(() => {
-        setApplicationFormMessage("");
-      }, 5000);
+      showTemporaryMessage(
+        "applicationForm",
+        setApplicationFormMessage,
+        error instanceof Error ? error.message : "Unable to track application.",
+      );
     }
   }
 
