@@ -80,7 +80,7 @@ export default function ResumeImport() {
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <h2 className="text-xl font-semibold">Import Resume</h2>
+        <h2 className="text-xl font-semibold text-gray-900">Import Resume</h2>
 
         <p className="text-sm text-gray-600">
           Upload a PDF or DOCX resume. Naomatch will extract and organize the
@@ -116,7 +116,7 @@ export default function ResumeImport() {
       {proposal && (
         <div className="space-y-6">
           <div>
-            <h3 className="text-lg font-semibold">Review Import</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Review Import</h3>
 
             <p className="text-sm text-gray-600">
               Nothing has been added to your vault yet.
@@ -125,7 +125,7 @@ export default function ResumeImport() {
 
           {/* Profile */}
           <div className="rounded-md border p-4">
-            <h4 className="mb-4 text-lg font-semibold">Profile</h4>
+            <h4 className="mb-4 text-lg font-semibold text-gray-900">Profile</h4>
 
             <div className="grid gap-3 md:grid-cols-2">
               <input
@@ -177,7 +177,7 @@ export default function ResumeImport() {
               />
               {/* Links */}
               <div className="mt-4 space-y-3 md:col-span-2">
-                <h4 className="font-medium">Links</h4>
+                <h4 className="font-medium text-gray-900">Links</h4>
 
                 {proposal.profile.links.map((link, index) => (
                   <div key={index} className="flex gap-2">
@@ -256,7 +256,7 @@ export default function ResumeImport() {
 
           {/* Education */}
           <div className="rounded-md border p-4">
-            <h4 className="mb-4 text-lg font-semibold">Education</h4>
+            <h4 className="mb-4 text-lg font-semibold text-gray-900">Education</h4>
 
             <div className="space-y-6">
               {proposal.education.map((education, index) => (
@@ -382,7 +382,7 @@ export default function ResumeImport() {
                   />
 
                   <div>
-                    <label className="mb-1 block text-sm">Start Date</label>
+                    <label className="mb-1 block text-sm text-gray-700">Start Date</label>
 
                     <input
                       type="date"
@@ -405,7 +405,7 @@ export default function ResumeImport() {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm">
+                    <label className="mb-1 block text-sm text-gray-700">
                       Graduation Date
                     </label>
 
@@ -430,7 +430,7 @@ export default function ResumeImport() {
                   </div>
                   {/* Coursework */}
                   <div className="space-y-2 md:col-span-2">
-                    <p className="text-sm font-medium">Coursework</p>
+                    <p className="text-sm font-medium text-gray-700">Coursework</p>
 
                     {education.coursework.map((course, courseIndex) => (
                       <div key={courseIndex} className="flex gap-2">
@@ -507,7 +507,7 @@ export default function ResumeImport() {
 
                   {/* Honors */}
                   <div className="space-y-2 md:col-span-2">
-                    <p className="text-sm font-medium">Honors</p>
+                    <p className="text-sm font-medium text-gray-700">Honors</p>
 
                     {education.honors.map((honor, honorIndex) => (
                       <div key={honorIndex} className="flex gap-2">
@@ -586,7 +586,7 @@ export default function ResumeImport() {
 
           {/* Experiences */}
           <div className="rounded-md border p-4">
-            <h4 className="mb-4 text-lg font-semibold">Experiences</h4>
+            <h4 className="mb-4 text-lg font-semibold text-gray-900">Experiences</h4>
 
             <div className="space-y-6">
               {proposal.experiences.map((experience, index) => (
@@ -672,7 +672,7 @@ export default function ResumeImport() {
                   />
 
                   <div>
-                    <label className="mb-1 block text-sm">Start Date</label>
+                    <label className="mb-1 block text-sm text-gray-700">Start Date</label>
 
                     <input
                       type="date"
@@ -695,7 +695,7 @@ export default function ResumeImport() {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm">End Date</label>
+                    <label className="mb-1 block text-sm text-gray-700">End Date</label>
 
                     <input
                       type="date"
@@ -737,7 +737,7 @@ export default function ResumeImport() {
                   />
 
                   <div className="space-y-2 md:col-span-2">
-                    <p className="text-sm font-medium">Bullets</p>
+                    <p className="text-sm font-medium text-gray-700">Bullets</p>
 
                     {experience.bullets.map((bullet, bulletIndex) => (
                       <div key={bulletIndex} className="flex gap-2">
@@ -821,7 +821,7 @@ export default function ResumeImport() {
 
           {/* Skills */}
           <div className="rounded-md border p-4">
-            <h4 className="mb-4 text-lg font-semibold">Skills</h4>
+            <h4 className="mb-4 text-lg font-semibold text-gray-900">Skills</h4>
 
             <div className="space-y-3">
               {proposal.skills.map((skill, index) => (

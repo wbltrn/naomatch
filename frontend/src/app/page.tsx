@@ -817,725 +817,914 @@ export default function Home() {
     applicationSort !== "status" ||
     deadlineFilter !== "all";
 
+  const inputClass =
+    "w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition focus:border-gray-500";
+
+  const selectClass =
+    "rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition focus:border-gray-500";
+
+  const labelClass = "mb-1 block text-xs font-medium text-gray-500";
+
+  const primaryButtonClass =
+    "inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60";
+
+  const secondaryButtonClass =
+    "inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60";
+
+  const smallButtonClass =
+    "rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50";
+
+  const smallDestructiveButtonClass =
+    "rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50";
+
+  const cardClass = "rounded-xl border border-gray-200 bg-white p-6 shadow-sm";
+
+  const itemCardClass = "rounded-lg border border-gray-200 bg-white p-4";
+
   return (
-    <main className="p-8">
-      <h1 className="text-3xl font-bold">Naomatch</h1>
+    <main className="min-h-screen bg-gray-50">
+      <div className="mx-auto max-w-6xl px-6 py-10">
+        <header className="mb-10">
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900">
+            Naomatch
+          </h1>
 
-      <a
-        href="/vault"
-        className="mt-4 inline-block rounded border px-4 py-2 text-sm font-medium"
-      >
-        Open Experience Vault
-      </a>
+          <p className="mt-2 max-w-2xl text-gray-600">
+            Keep your Experience Vault up to date, add job postings, and
+            track your applications.
+          </p>
 
-      <div className="mt-8">
-        <ResumeImport />
-      </div>
-
-      <p className="mt-4">
-        Backend status: <strong>{status}</strong>
-      </p>
-
-      <button
-        onClick={handleCheckBackend}
-        className="mt-4 rounded bg-black px-4 py-2 text-white"
-      >
-        Check Backend
-      </button>
-
-      <form onSubmit={handleCreateExperience} className="mt-8 space-y-3">
-        <h2 className="text-2xl font-semibold">Add Experience</h2>
-
-        <input
-          type="text"
-          placeholder="Type"
-          value={formData.type}
-          onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-          className="block w-full rounded border p-2"
-        />
-
-        <input
-          type="text"
-          placeholder="Organization"
-          value={formData.organization}
-          onChange={(e) =>
-            setFormData({ ...formData, organization: e.target.value })
-          }
-          className="block w-full rounded border p-2"
-        />
-
-        <input
-          type="text"
-          placeholder="Title"
-          value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          className="block w-full rounded border p-2"
-        />
-
-        <input
-          type="text"
-          placeholder="Location"
-          value={formData.location}
-          onChange={(e) =>
-            setFormData({ ...formData, location: e.target.value })
-          }
-          className="block w-full rounded border p-2"
-        />
-
-        <div>
-          <label className="mb-1 block text-sm font-medium">Start Date</label>
-
-          <input
-            type="date"
-            value={formData.start_date}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                start_date: e.target.value,
-              })
-            }
-            className="block w-full rounded border p-2"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium">End Date</label>
-
-          <input
-            type="date"
-            value={formData.end_date}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                end_date: e.target.value,
-              })
-            }
-            disabled={isCurrent}
-            className="block w-full rounded border p-2"
-          />
-        </div>
-
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={isCurrent}
-            onChange={(e) => {
-              const checked = e.target.checked;
-              setIsCurrent(checked);
-
-              if (checked) {
-                setFormData({
-                  ...formData,
-                  end_date: "",
-                });
-              }
-            }}
-          />
-          Currently working here
-        </label>
-
-        <textarea
-          placeholder="Description"
-          value={formData.description}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              description: e.target.value,
-            })
-          }
-          className="block w-full rounded border p-2"
-        />
-
-        <div className="space-y-2">
-          {bullets.map((bullet, index) => (
-            <div key={index} className="flex gap-2">
-              <input
-                type="text"
-                placeholder={`Resume bullet ${index + 1}`}
-                value={bullet}
-                onChange={(e) => {
-                  const updatedBullets = [...bullets];
-                  updatedBullets[index] = e.target.value;
-                  setBullets(updatedBullets);
-                }}
-                className="block w-full rounded border p-2"
-              />
-
-              <button
-                type="button"
-                onClick={() => {
-                  const updatedBullets = bullets.filter(
-                    (_, bulletIndex) => bulletIndex !== index,
-                  );
-
-                  setBullets(updatedBullets.length > 0 ? updatedBullets : [""]);
-                }}
-                className="rounded border px-3"
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setBullets([...bullets, ""])}
-          className="rounded border px-3 py-1"
-        >
-          Add Bullet
-        </button>
-
-        <div className="flex gap-2">
-          <button
-            type="submit"
-            className="rounded bg-black px-4 py-2 text-white"
+          <Link
+            href="/vault"
+            className={`mt-4 ${secondaryButtonClass}`}
           >
-            {editingExperienceId === null ? "Add Experience" : "Save Changes"}
-          </button>
+            Open Experience Vault
+          </Link>
+        </header>
 
-          {editingExperienceId !== null && (
-            <button
-              type="button"
-              onClick={handleCancelEdit}
-              className="rounded border px-4 py-2"
-            >
-              Cancel
-            </button>
-          )}
-        </div>
+        <section className="mb-10">
+          <ResumeImport />
+        </section>
 
-        {formMessage && <p className="text-sm">{formMessage}</p>}
-      </form>
-
-      <div className="mt-8">
-        <h2 className="text-2xl font-semibold">Experiences</h2>
-
-        {deleteMessage && <p className="mt-2 text-sm">{deleteMessage}</p>}
-
-        {loading ? (
-          <p className="mt-4">Loading experiences...</p>
-        ) : error ? (
-          <p className="mt-4">{error}</p>
-        ) : experiences.length === 0 ? (
-          <p className="mt-4">No experiences added yet.</p>
-        ) : (
-          experiences.map((experience: any) => (
-            <div key={experience.id} className="mt-4 rounded border p-4">
-              <h3 className="text-xl font-bold">{experience.title}</h3>
-
-              <p className="mt-1">
-                {experience.organization}
-                {experience.location ? ` • ${experience.location}` : ""}
-              </p>
-
-              <p className="text-sm">
-                {experience.type} •{" "}
-                {formatExperienceDate(experience.start_date)}
-                {" - "}
-                {formatExperienceDate(experience.end_date)}
-              </p>
-
-              <p className="mt-2">{experience.description}</p>
-
-              {experience.bullets?.length > 0 && (
-                <ul className="mt-2 list-disc pl-5">
-                  {experience.bullets.map((bullet: any) => (
-                    <li key={bullet.id}>{bullet.bullet_text}</li>
-                  ))}
-                </ul>
-              )}
-
-              <button
-                onClick={() => handleEditExperience(experience)}
-                className="mt-3 mr-2 rounded border px-3 py-1"
-              >
-                Edit
-              </button>
-
-              <button
-                onClick={() => handleDeleteExperience(experience.id)}
-                className="mt-3 rounded border px-3 py-1"
-              >
-                Delete
-              </button>
-            </div>
-          ))
-        )}
-
-        <form onSubmit={handleCreateJob} className="mt-8 space-y-3">
-          <h2 className="text-2xl font-semibold">Add Job Posting</h2>
-
-          <input
-            type="text"
-            placeholder="Company"
-            value={jobFormData.company}
-            onChange={(e) =>
-              setJobFormData({
-                ...jobFormData,
-                company: e.target.value,
-              })
-            }
-            className="block w-full rounded border p-2"
-          />
-
-          <input
-            type="text"
-            placeholder="Job Title"
-            value={jobFormData.title}
-            onChange={(e) =>
-              setJobFormData({
-                ...jobFormData,
-                title: e.target.value,
-              })
-            }
-            className="block w-full rounded border p-2"
-          />
-
-          <input
-            type="text"
-            placeholder="Location"
-            value={jobFormData.location}
-            onChange={(e) =>
-              setJobFormData({
-                ...jobFormData,
-                location: e.target.value,
-              })
-            }
-            className="block w-full rounded border p-2"
-          />
-
-          <input
-            type="text"
-            placeholder="Job URL"
-            value={jobFormData.job_url}
-            onChange={(e) =>
-              setJobFormData({
-                ...jobFormData,
-                job_url: e.target.value,
-              })
-            }
-            className="block w-full rounded border p-2"
-          />
-
-          <textarea
-            placeholder="Job Description"
-            value={jobFormData.description}
-            onChange={(e) =>
-              setJobFormData({
-                ...jobFormData,
-                description: e.target.value,
-              })
-            }
-            className="block w-full rounded border p-2"
-          />
-
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              className="rounded bg-black px-4 py-2 text-white"
-            >
-              {editingJobId === null ? "Add Job" : "Save Changes"}
-            </button>
-
-            {editingJobId !== null && (
-              <button
-                type="button"
-                onClick={handleCancelJobEdit}
-                className="rounded border px-4 py-2"
-              >
-                Cancel
-              </button>
-            )}
+        <section className="mb-10 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div>
+            <p className={labelClass}>Backend status</p>
+            <p className="text-lg font-semibold text-gray-900">{status}</p>
           </div>
 
-          {jobFormMessage && <p className="text-sm">{jobFormMessage}</p>}
-        </form>
+          <button onClick={handleCheckBackend} className={secondaryButtonClass}>
+            Check Backend
+          </button>
+        </section>
 
-        <div className="mt-8">
-          <h2 className="text-2xl font-semibold">Jobs</h2>
+        <section className="mb-10">
+          <form
+            onSubmit={handleCreateExperience}
+            className={`${cardClass} space-y-4`}
+          >
+            <h2 className="text-2xl font-semibold text-gray-900">
+              Add Experience
+            </h2>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label>
+                <span className={labelClass}>Type</span>
+
+                <input
+                  type="text"
+                  placeholder="Type"
+                  value={formData.type}
+                  onChange={(e) =>
+                    setFormData({ ...formData, type: e.target.value })
+                  }
+                  className={inputClass}
+                />
+              </label>
+
+              <label>
+                <span className={labelClass}>Organization</span>
+
+                <input
+                  type="text"
+                  placeholder="Organization"
+                  value={formData.organization}
+                  onChange={(e) =>
+                    setFormData({ ...formData, organization: e.target.value })
+                  }
+                  className={inputClass}
+                />
+              </label>
+
+              <label>
+                <span className={labelClass}>Title</span>
+
+                <input
+                  type="text"
+                  placeholder="Title"
+                  value={formData.title}
+                  onChange={(e) =>
+                    setFormData({ ...formData, title: e.target.value })
+                  }
+                  className={inputClass}
+                />
+              </label>
+
+              <label>
+                <span className={labelClass}>Location</span>
+
+                <input
+                  type="text"
+                  placeholder="Location"
+                  value={formData.location}
+                  onChange={(e) =>
+                    setFormData({ ...formData, location: e.target.value })
+                  }
+                  className={inputClass}
+                />
+              </label>
+
+              <label>
+                <span className={labelClass}>Start Date</span>
+
+                <input
+                  type="date"
+                  value={formData.start_date}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      start_date: e.target.value,
+                    })
+                  }
+                  className={inputClass}
+                />
+              </label>
+
+              <label>
+                <span className={labelClass}>End Date</span>
+
+                <input
+                  type="date"
+                  value={formData.end_date}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      end_date: e.target.value,
+                    })
+                  }
+                  disabled={isCurrent}
+                  className={inputClass}
+                />
+              </label>
+            </div>
+
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={isCurrent}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setIsCurrent(checked);
+
+                  if (checked) {
+                    setFormData({
+                      ...formData,
+                      end_date: "",
+                    });
+                  }
+                }}
+              />
+              Currently working here
+            </label>
+
+            <label>
+              <span className={labelClass}>Description</span>
+
+              <textarea
+                placeholder="Description"
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    description: e.target.value,
+                  })
+                }
+                className={`${inputClass} resize-y`}
+              />
+            </label>
+
+            <div className="space-y-2">
+              <span className={labelClass}>Resume Bullets</span>
+
+              {bullets.map((bullet, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder={`Resume bullet ${index + 1}`}
+                    value={bullet}
+                    onChange={(e) => {
+                      const updatedBullets = [...bullets];
+                      updatedBullets[index] = e.target.value;
+                      setBullets(updatedBullets);
+                    }}
+                    className={inputClass}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updatedBullets = bullets.filter(
+                        (_, bulletIndex) => bulletIndex !== index,
+                      );
+
+                      setBullets(
+                        updatedBullets.length > 0 ? updatedBullets : [""],
+                      );
+                    }}
+                    className={smallDestructiveButtonClass}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => setBullets([...bullets, ""])}
+                className="text-xs font-medium text-blue-600 hover:underline"
+              >
+                + Add Bullet
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <button type="submit" className={primaryButtonClass}>
+                {editingExperienceId === null ? "Add Experience" : "Save Changes"}
+              </button>
+
+              {editingExperienceId !== null && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className={secondaryButtonClass}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+
+            {formMessage && (
+              <p className="text-sm text-gray-600">{formMessage}</p>
+            )}
+          </form>
+        </section>
+
+        <section className="mb-10">
+          <h2 className="mb-4 text-2xl font-semibold text-gray-900">
+            Experiences
+          </h2>
+
+          {deleteMessage && (
+            <p className="mb-3 text-sm text-gray-600">{deleteMessage}</p>
+          )}
+
+          {loading ? (
+            <p className="text-sm text-gray-500">Loading experiences...</p>
+          ) : error ? (
+            <p className="text-sm text-red-600">{error}</p>
+          ) : experiences.length === 0 ? (
+            <p className="text-sm text-gray-500">No experiences added yet.</p>
+          ) : (
+            <div className="space-y-4">
+              {experiences.map((experience: any) => (
+                <div key={experience.id} className={itemCardClass}>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {experience.title}
+                  </h3>
+
+                  <p className="mt-1 text-sm text-gray-600">
+                    {experience.organization}
+                    {experience.location ? ` • ${experience.location}` : ""}
+                  </p>
+
+                  <p className="mt-1 text-xs text-gray-500">
+                    {experience.type} •{" "}
+                    {formatExperienceDate(experience.start_date)}
+                    {" - "}
+                    {formatExperienceDate(experience.end_date)}
+                  </p>
+
+                  {experience.description && (
+                    <p className="mt-2 text-sm text-gray-700">
+                      {experience.description}
+                    </p>
+                  )}
+
+                  {experience.bullets?.length > 0 && (
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700">
+                      {experience.bullets.map((bullet: any) => (
+                        <li key={bullet.id}>{bullet.bullet_text}</li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      onClick={() => handleEditExperience(experience)}
+                      className={smallButtonClass}
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      onClick={() => handleDeleteExperience(experience.id)}
+                      className={smallDestructiveButtonClass}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="mb-10">
+          <form
+            onSubmit={handleCreateJob}
+            className={`${cardClass} space-y-4`}
+          >
+            <h2 className="text-2xl font-semibold text-gray-900">
+              Add Job Posting
+            </h2>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label>
+                <span className={labelClass}>Company</span>
+
+                <input
+                  type="text"
+                  placeholder="Company"
+                  value={jobFormData.company}
+                  onChange={(e) =>
+                    setJobFormData({
+                      ...jobFormData,
+                      company: e.target.value,
+                    })
+                  }
+                  className={inputClass}
+                />
+              </label>
+
+              <label>
+                <span className={labelClass}>Job Title</span>
+
+                <input
+                  type="text"
+                  placeholder="Job Title"
+                  value={jobFormData.title}
+                  onChange={(e) =>
+                    setJobFormData({
+                      ...jobFormData,
+                      title: e.target.value,
+                    })
+                  }
+                  className={inputClass}
+                />
+              </label>
+
+              <label>
+                <span className={labelClass}>Location</span>
+
+                <input
+                  type="text"
+                  placeholder="Location"
+                  value={jobFormData.location}
+                  onChange={(e) =>
+                    setJobFormData({
+                      ...jobFormData,
+                      location: e.target.value,
+                    })
+                  }
+                  className={inputClass}
+                />
+              </label>
+
+              <label>
+                <span className={labelClass}>Job URL</span>
+
+                <input
+                  type="text"
+                  placeholder="Job URL"
+                  value={jobFormData.job_url}
+                  onChange={(e) =>
+                    setJobFormData({
+                      ...jobFormData,
+                      job_url: e.target.value,
+                    })
+                  }
+                  className={inputClass}
+                />
+              </label>
+            </div>
+
+            <label>
+              <span className={labelClass}>Job Description</span>
+
+              <textarea
+                placeholder="Job Description"
+                value={jobFormData.description}
+                onChange={(e) =>
+                  setJobFormData({
+                    ...jobFormData,
+                    description: e.target.value,
+                  })
+                }
+                className={`${inputClass} resize-y`}
+              />
+            </label>
+
+            <div className="flex flex-wrap gap-3">
+              <button type="submit" className={primaryButtonClass}>
+                {editingJobId === null ? "Add Job" : "Save Changes"}
+              </button>
+
+              {editingJobId !== null && (
+                <button
+                  type="button"
+                  onClick={handleCancelJobEdit}
+                  className={secondaryButtonClass}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+
+            {jobFormMessage && (
+              <p className="text-sm text-gray-600">{jobFormMessage}</p>
+            )}
+          </form>
+        </section>
+
+        <section className="mb-10">
+          <h2 className="mb-4 text-2xl font-semibold text-gray-900">Jobs</h2>
 
           {jobDeleteMessage && (
-            <p className="mt-2 text-sm">{jobDeleteMessage}</p>
+            <p className="mb-3 text-sm text-gray-600">{jobDeleteMessage}</p>
           )}
 
           {jobs.length === 0 ? (
-            <p className="mt-4">No job postings added yet.</p>
+            <p className="text-sm text-gray-500">No job postings added yet.</p>
           ) : (
-            jobs.map((job: any) => (
-              <div key={job.id} className="mt-4 rounded border p-4">
-                <h3 className="text-xl font-bold">{job.title}</h3>
+            <div className="space-y-4">
+              {jobs.map((job: any) => (
+                <div key={job.id} className={itemCardClass}>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {job.title}
+                  </h3>
 
-                <p>{job.company}</p>
+                  <p className="text-sm text-gray-600">{job.company}</p>
 
-                {job.location && <p>{job.location}</p>}
-
-                <Link
-                  href={`/jobs/${job.id}`}
-                  className="mt-1 block underline"
-                >
-                  Tailor Resume →
-                </Link>
-
-                {job.job_url && (
-                  <a
-                    href={job.job_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-1 block underline"
-                  >
-                    View Job Posting
-                  </a>
-                )}
-
-                <p className="mt-2">{job.description}</p>
-
-                <button
-                  onClick={() => handleEditJob(job)}
-                  className="mt-3 mr-2 rounded border px-3 py-1"
-                >
-                  Edit
-                </button>
-
-                <button
-                  onClick={() => handleDeleteJob(job.id)}
-                  className="mt-3 rounded border px-3 py-1"
-                >
-                  Delete
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      <form onSubmit={handleCreateApplication} className="mt-8 space-y-3">
-        <h2 className="text-2xl font-semibold">Track Application</h2>
-
-        <select
-          value={applicationFormData.job_id}
-          onChange={(e) =>
-            setApplicationFormData({
-              ...applicationFormData,
-              job_id: e.target.value,
-            })
-          }
-          className="block w-full rounded border p-2"
-        >
-          <option value="">Select a job</option>
-
-          {availableJobsForApplication.map((job: any) => (
-            <option key={job.id} value={job.id}>
-              {job.company} — {job.title}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={applicationFormData.status}
-          onChange={(e) =>
-            setApplicationFormData({
-              ...applicationFormData,
-              status: e.target.value,
-            })
-          }
-          className="block w-full rounded border p-2"
-        >
-          <option value="Interested">Interested</option>
-          <option value="Applied">Applied</option>
-          <option value="Interview">Interview</option>
-          <option value="Offer">Offer</option>
-          <option value="Rejected">Rejected</option>
-          <option value="Withdrawn">Withdrawn</option>
-        </select>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium">Applied Date</label>
-
-          <input
-            type="date"
-            value={applicationFormData.applied_date}
-            onChange={(e) =>
-              setApplicationFormData({
-                ...applicationFormData,
-                applied_date: e.target.value,
-              })
-            }
-            className="block w-full rounded border p-2"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium">
-            Application Due Date
-          </label>
-
-          <input
-            type="date"
-            value={applicationFormData.deadline}
-            onChange={(e) =>
-              setApplicationFormData({
-                ...applicationFormData,
-                deadline: e.target.value,
-              })
-            }
-            className="block w-full rounded border p-2"
-          />
-        </div>
-
-        <textarea
-          placeholder="Notes"
-          value={applicationFormData.notes}
-          onChange={(e) =>
-            setApplicationFormData({
-              ...applicationFormData,
-              notes: e.target.value,
-            })
-          }
-          className="block w-full rounded border p-2"
-        />
-
-        <div className="flex gap-2">
-          <button
-            type="submit"
-            className="rounded bg-black px-4 py-2 text-white"
-          >
-            {editingApplicationId === null
-              ? "Track Application"
-              : "Save Changes"}
-          </button>
-
-          {editingApplicationId !== null && (
-            <button
-              type="button"
-              onClick={handleCancelApplicationEdit}
-              className="rounded border px-4 py-2"
-            >
-              Cancel
-            </button>
-          )}
-        </div>
-        {applicationFormMessage && (
-          <p className="text-sm">{applicationFormMessage}</p>
-        )}
-      </form>
-
-      <div className="mt-8">
-        <h2 className="text-2xl font-semibold">Applications</h2>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <button
-            type="button"
-            onClick={handleClearApplicationFilters}
-            className="rounded border p-4 text-left"
-          >
-            <p className="text-sm">Total Applications</p>
-            <p className="mt-1 text-2xl font-bold">{applicationCounts.total}</p>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setApplicationStatusFilter("Applied");
-              setDeadlineFilter("all");
-            }}
-            className="rounded border p-4 text-left"
-          >
-            <p className="text-sm">Applied</p>
-            <p className="mt-1 text-2xl font-bold">
-              {applicationCounts.applied}
-            </p>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setApplicationStatusFilter("Interview");
-              setDeadlineFilter("all");
-            }}
-            className="rounded border p-4 text-left"
-          >
-            <p className="text-sm">Interviews</p>
-            <p className="mt-1 text-2xl font-bold">
-              {applicationCounts.interview}
-            </p>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setApplicationStatusFilter("Offer");
-              setDeadlineFilter("all");
-            }}
-            className="rounded border p-4 text-left"
-          >
-            <p className="text-sm">Offers</p>
-            <p className="mt-1 text-2xl font-bold">{applicationCounts.offer}</p>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setApplicationStatusFilter("All");
-              setDeadlineFilter("past-due");
-            }}
-            className="rounded border p-4 text-left"
-          >
-            <p className="text-sm">Overdue</p>
-            <p className="mt-1 text-2xl font-bold">
-              {applicationCounts.overdue}
-            </p>
-          </button>
-        </div>
-
-        <select
-          value={applicationStatusFilter}
-          onChange={(e) => setApplicationStatusFilter(e.target.value)}
-          className="mt-3 rounded border p-2"
-        >
-          <option value="All">All Statuses</option>
-          <option value="Interested">Interested</option>
-          <option value="Applied">Applied</option>
-          <option value="Interview">Interview</option>
-          <option value="Offer">Offer</option>
-          <option value="Rejected">Rejected</option>
-          <option value="Withdrawn">Withdrawn</option>
-        </select>
-
-        <select
-          value={applicationSort}
-          onChange={(e) => setApplicationSort(e.target.value)}
-          className="mt-3 rounded border p-2"
-        >
-          <option value="status">Status Priority</option>
-          <option value="deadline-soonest">Deadline: Soonest</option>
-          <option value="deadline-latest">Deadline: Latest</option>
-          <option value="recently-applied">Recently Applied</option>
-        </select>
-
-        <select
-          value={deadlineFilter}
-          onChange={(e) => setDeadlineFilter(e.target.value)}
-          className="mt-3 rounded border p-2"
-        >
-          <option value="all">All Deadlines</option>
-          <option value="due-today">Due Today</option>
-          <option value="due-soon">Due Within 7 Days</option>
-          <option value="due-30">Due Within 30 Days</option>
-          <option value="past-due">Past Due</option>
-          <option value="no-deadline">No Deadline</option>
-        </select>
-
-        <input
-          type="text"
-          placeholder="Search by company or job title"
-          value={applicationSearch}
-          onChange={(e) => setApplicationSearch(e.target.value)}
-          className="mt-3 block w-full rounded border p-2"
-        />
-
-        <button
-          type="button"
-          onClick={handleClearApplicationFilters}
-          className="mt-3 rounded border px-3 py-2"
-        >
-          Clear Filters
-        </button>
-
-        {hasActiveApplicationFilters && (
-          <p className="mt-2 text-sm">Filters are active.</p>
-        )}
-
-        {applicationDeleteMessage && (
-          <p className="mt-2 text-sm">{applicationDeleteMessage}</p>
-        )}
-
-        {applications.length === 0 ? (
-          <p className="mt-4">No applications tracked yet.</p>
-        ) : filteredApplications.length === 0 ? (
-          <p className="mt-4">No applications match your current filters.</p>
-        ) : (
-          filteredApplications.map((application: any) => (
-            <div key={application.id} className="mt-4 rounded border p-4">
-              <p>
-                <strong>Status:</strong>{" "}
-                <span
-                  className={`rounded px-2 py-1 text-sm font-medium ${getApplicationStatusClasses(
-                    application.status,
-                  )}`}
-                >
-                  {application.status}
-                </span>
-              </p>
-
-              {application.applied_date && (
-                <p>
-                  <strong>Applied:</strong>{" "}
-                  {formatApplicationDate(application.applied_date)}
-                </p>
-              )}
-
-              {application.deadline && (
-                <div>
-                  <p>
-                    <strong>Deadline:</strong>{" "}
-                    {formatApplicationDate(application.deadline)}
-                  </p>
-
-                  {getDeadlineMessage(application.deadline) && (
-                    <p className="text-sm font-medium">
-                      {getDeadlineMessage(application.deadline)}
-                    </p>
+                  {job.location && (
+                    <p className="text-sm text-gray-500">{job.location}</p>
                   )}
-                </div>
-              )}
 
-              {application.notes && (
-                <p className="mt-2">
-                  <strong>Notes:</strong> {application.notes}
-                </p>
-              )}
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                    <Link
+                      href={`/jobs/${job.id}`}
+                      className="font-medium text-gray-900 underline hover:no-underline"
+                    >
+                      Tailor Resume →
+                    </Link>
 
-              {(() => {
-                const job = getJobForApplication(application.job_id);
-
-                return (
-                  <div className="mt-2">
-                    <p className="text-sm">
-                      {job
-                        ? `${job.company} — ${job.title}`
-                        : `Job ID: ${application.job_id}`}
-                    </p>
-
-                    {job?.job_url && (
+                    {job.job_url && (
                       <a
                         href={job.job_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm underline"
+                        className="text-gray-600 underline hover:no-underline"
                       >
                         View Job Posting
                       </a>
                     )}
                   </div>
-                );
-              })()}
-              <button
-                onClick={() => handleEditApplication(application)}
-                className="mt-3 mr-2 rounded border px-3 py-1"
+
+                  <p className="mt-2 text-sm text-gray-700">
+                    {job.description}
+                  </p>
+
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      onClick={() => handleEditJob(job)}
+                      className={smallButtonClass}
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      onClick={() => handleDeleteJob(job.id)}
+                      className={smallDestructiveButtonClass}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="mb-10">
+          <form
+            onSubmit={handleCreateApplication}
+            className={`${cardClass} space-y-4`}
+          >
+            <h2 className="text-2xl font-semibold text-gray-900">
+              Track Application
+            </h2>
+
+            <label>
+              <span className={labelClass}>Job</span>
+
+              <select
+                value={applicationFormData.job_id}
+                onChange={(e) =>
+                  setApplicationFormData({
+                    ...applicationFormData,
+                    job_id: e.target.value,
+                  })
+                }
+                className={inputClass}
               >
-                Edit
+                <option value="">Select a job</option>
+
+                {availableJobsForApplication.map((job: any) => (
+                  <option key={job.id} value={job.id}>
+                    {job.company} — {job.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span className={labelClass}>Status</span>
+
+              <select
+                value={applicationFormData.status}
+                onChange={(e) =>
+                  setApplicationFormData({
+                    ...applicationFormData,
+                    status: e.target.value,
+                  })
+                }
+                className={inputClass}
+              >
+                <option value="Interested">Interested</option>
+                <option value="Applied">Applied</option>
+                <option value="Interview">Interview</option>
+                <option value="Offer">Offer</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Withdrawn">Withdrawn</option>
+              </select>
+            </label>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label>
+                <span className={labelClass}>Applied Date</span>
+
+                <input
+                  type="date"
+                  value={applicationFormData.applied_date}
+                  onChange={(e) =>
+                    setApplicationFormData({
+                      ...applicationFormData,
+                      applied_date: e.target.value,
+                    })
+                  }
+                  className={inputClass}
+                />
+              </label>
+
+              <label>
+                <span className={labelClass}>Application Due Date</span>
+
+                <input
+                  type="date"
+                  value={applicationFormData.deadline}
+                  onChange={(e) =>
+                    setApplicationFormData({
+                      ...applicationFormData,
+                      deadline: e.target.value,
+                    })
+                  }
+                  className={inputClass}
+                />
+              </label>
+            </div>
+
+            <label>
+              <span className={labelClass}>Notes</span>
+
+              <textarea
+                placeholder="Notes"
+                value={applicationFormData.notes}
+                onChange={(e) =>
+                  setApplicationFormData({
+                    ...applicationFormData,
+                    notes: e.target.value,
+                  })
+                }
+                className={`${inputClass} resize-y`}
+              />
+            </label>
+
+            <div className="flex flex-wrap gap-3">
+              <button type="submit" className={primaryButtonClass}>
+                {editingApplicationId === null
+                  ? "Track Application"
+                  : "Save Changes"}
               </button>
 
-              <button
-                onClick={() => handleDeleteApplication(application.id)}
-                className="mt-3 rounded border px-3 py-1"
-              >
-                Delete
-              </button>
+              {editingApplicationId !== null && (
+                <button
+                  type="button"
+                  onClick={handleCancelApplicationEdit}
+                  className={secondaryButtonClass}
+                >
+                  Cancel
+                </button>
+              )}
             </div>
-          ))
-        )}
+
+            {applicationFormMessage && (
+              <p className="text-sm text-gray-600">{applicationFormMessage}</p>
+            )}
+          </form>
+        </section>
+
+        <section className="mb-10">
+          <h2 className="mb-4 text-2xl font-semibold text-gray-900">
+            Applications
+          </h2>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <button
+              type="button"
+              onClick={handleClearApplicationFilters}
+              className="rounded-xl border border-gray-200 bg-white p-4 text-left shadow-sm transition hover:bg-gray-50"
+            >
+              <p className={labelClass}>Total Applications</p>
+              <p className="mt-1 text-2xl font-bold text-gray-900">
+                {applicationCounts.total}
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setApplicationStatusFilter("Applied");
+                setDeadlineFilter("all");
+              }}
+              className="rounded-xl border border-gray-200 bg-white p-4 text-left shadow-sm transition hover:bg-gray-50"
+            >
+              <p className={labelClass}>Applied</p>
+              <p className="mt-1 text-2xl font-bold text-gray-900">
+                {applicationCounts.applied}
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setApplicationStatusFilter("Interview");
+                setDeadlineFilter("all");
+              }}
+              className="rounded-xl border border-gray-200 bg-white p-4 text-left shadow-sm transition hover:bg-gray-50"
+            >
+              <p className={labelClass}>Interviews</p>
+              <p className="mt-1 text-2xl font-bold text-gray-900">
+                {applicationCounts.interview}
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setApplicationStatusFilter("Offer");
+                setDeadlineFilter("all");
+              }}
+              className="rounded-xl border border-gray-200 bg-white p-4 text-left shadow-sm transition hover:bg-gray-50"
+            >
+              <p className={labelClass}>Offers</p>
+              <p className="mt-1 text-2xl font-bold text-gray-900">
+                {applicationCounts.offer}
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setApplicationStatusFilter("All");
+                setDeadlineFilter("past-due");
+              }}
+              className="rounded-xl border border-gray-200 bg-white p-4 text-left shadow-sm transition hover:bg-gray-50"
+            >
+              <p className={labelClass}>Overdue</p>
+              <p className="mt-1 text-2xl font-bold text-gray-900">
+                {applicationCounts.overdue}
+              </p>
+            </button>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-end gap-3">
+            <label>
+              <span className={labelClass}>Status</span>
+
+              <select
+                value={applicationStatusFilter}
+                onChange={(e) => setApplicationStatusFilter(e.target.value)}
+                className={selectClass}
+              >
+                <option value="All">All Statuses</option>
+                <option value="Interested">Interested</option>
+                <option value="Applied">Applied</option>
+                <option value="Interview">Interview</option>
+                <option value="Offer">Offer</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Withdrawn">Withdrawn</option>
+              </select>
+            </label>
+
+            <label>
+              <span className={labelClass}>Sort</span>
+
+              <select
+                value={applicationSort}
+                onChange={(e) => setApplicationSort(e.target.value)}
+                className={selectClass}
+              >
+                <option value="status">Status Priority</option>
+                <option value="deadline-soonest">Deadline: Soonest</option>
+                <option value="deadline-latest">Deadline: Latest</option>
+                <option value="recently-applied">Recently Applied</option>
+              </select>
+            </label>
+
+            <label>
+              <span className={labelClass}>Deadline</span>
+
+              <select
+                value={deadlineFilter}
+                onChange={(e) => setDeadlineFilter(e.target.value)}
+                className={selectClass}
+              >
+                <option value="all">All Deadlines</option>
+                <option value="due-today">Due Today</option>
+                <option value="due-soon">Due Within 7 Days</option>
+                <option value="due-30">Due Within 30 Days</option>
+                <option value="past-due">Past Due</option>
+                <option value="no-deadline">No Deadline</option>
+              </select>
+            </label>
+
+            <label className="min-w-[220px] flex-1">
+              <span className={labelClass}>Search</span>
+
+              <input
+                type="text"
+                placeholder="Search by company or job title"
+                value={applicationSearch}
+                onChange={(e) => setApplicationSearch(e.target.value)}
+                className={inputClass}
+              />
+            </label>
+
+            <button
+              type="button"
+              onClick={handleClearApplicationFilters}
+              className={secondaryButtonClass}
+            >
+              Clear Filters
+            </button>
+          </div>
+
+          {hasActiveApplicationFilters && (
+            <p className="mt-3 text-sm text-gray-500">Filters are active.</p>
+          )}
+
+          {applicationDeleteMessage && (
+            <p className="mt-2 text-sm text-gray-600">
+              {applicationDeleteMessage}
+            </p>
+          )}
+
+          <div className="mt-4">
+            {applications.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                No applications tracked yet.
+              </p>
+            ) : filteredApplications.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                No applications match your current filters.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {filteredApplications.map((application: any) => (
+                  <div key={application.id} className={itemCardClass}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-500">
+                        Status:
+                      </span>
+
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${getApplicationStatusClasses(
+                          application.status,
+                        )}`}
+                      >
+                        {application.status}
+                      </span>
+                    </div>
+
+                    {application.applied_date && (
+                      <p className="mt-2 text-sm text-gray-600">
+                        <span className="font-medium text-gray-900">
+                          Applied:
+                        </span>{" "}
+                        {formatApplicationDate(application.applied_date)}
+                      </p>
+                    )}
+
+                    {application.deadline && (
+                      <div className="mt-1">
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium text-gray-900">
+                            Deadline:
+                          </span>{" "}
+                          {formatApplicationDate(application.deadline)}
+                        </p>
+
+                        {getDeadlineMessage(application.deadline) && (
+                          <p className="mt-0.5 text-xs font-medium text-amber-600">
+                            {getDeadlineMessage(application.deadline)}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {application.notes && (
+                      <p className="mt-2 text-sm text-gray-700">
+                        <span className="font-medium text-gray-900">
+                          Notes:
+                        </span>{" "}
+                        {application.notes}
+                      </p>
+                    )}
+
+                    {(() => {
+                      const job = getJobForApplication(application.job_id);
+
+                      return (
+                        <div className="mt-2">
+                          <p className="text-sm text-gray-600">
+                            {job
+                              ? `${job.company} — ${job.title}`
+                              : `Job ID: ${application.job_id}`}
+                          </p>
+
+                          {job?.job_url && (
+                            <a
+                              href={job.job_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-gray-600 underline hover:no-underline"
+                            >
+                              View Job Posting
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => handleEditApplication(application)}
+                        className={smallButtonClass}
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteApplication(application.id)}
+                        className={smallDestructiveButtonClass}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
       </div>
     </main>
   );
