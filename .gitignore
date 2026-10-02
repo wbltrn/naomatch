@@ -22,3 +22,7 @@ out/
 
 # Logs
 *.log
+
+# Planning docs (local only)
+CLAUDE.md
+ROADMAP.md
