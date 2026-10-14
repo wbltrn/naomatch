@@ -1,4 +1,5 @@
 import logging
+import os
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,8 +31,16 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+# Comma-separated list of allowed frontend origins. Defaults to local dev;
+# set ALLOWED_ORIGINS in the deploy environment to the production frontend
+# URL (e.g. https://naomatch.vercel.app) without needing a code change.
 origins = [
-    "http://localhost:3000",
+    origin.strip()
+    for origin in os.getenv(
+        "ALLOWED_ORIGINS",
+        "http://localhost:3000",
+    ).split(",")
+    if origin.strip()
 ]
 
 app.add_middleware(

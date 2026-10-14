@@ -1,4 +1,5 @@
-const API_URL = "http://127.0.0.1:8000";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 export class ApiError extends Error {
   status: number;
@@ -31,7 +32,7 @@ export async function checkBackend() {
 }
 
 export async function getExperiences() {
-  const response = await fetch("http://127.0.0.1:8000/experiences/");
+  const response = await fetch(`${API_URL}/experiences/`);
 
   if (!response.ok) {
     throw new Error("Failed to fetch experiences");
@@ -50,7 +51,7 @@ export async function createExperience(experience: {
   description?: string;
   bullets: { bullet_text: string }[];
 }) {
-  const response = await fetch("http://127.0.0.1:8000/experiences/", {
+  const response = await fetch(`${API_URL}/experiences/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -67,7 +68,7 @@ export async function createExperience(experience: {
 
 export async function deleteExperience(experienceId: number) {
   const response = await fetch(
-    `http://127.0.0.1:8000/experiences/${experienceId}`,
+    `${API_URL}/experiences/${experienceId}`,
     {
       method: "DELETE",
     }
@@ -94,7 +95,7 @@ export async function updateExperience(
   }
 ) {
   const response = await fetch(
-    `http://127.0.0.1:8000/experiences/${experienceId}`,
+    `${API_URL}/experiences/${experienceId}`,
     {
       method: "PUT",
       headers: {
@@ -112,7 +113,7 @@ export async function updateExperience(
 }
 
 export async function getJobs() {
-  const response = await fetch("http://127.0.0.1:8000/jobs/");
+  const response = await fetch(`${API_URL}/jobs/`);
 
   if (!response.ok) {
     throw new Error("Failed to fetch jobs");
@@ -146,7 +147,7 @@ export async function createJob(job: {
   job_url?: string | null;
   description: string;
 }) {
-  const response = await fetch("http://127.0.0.1:8000/jobs/", {
+  const response = await fetch(`${API_URL}/jobs/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -172,7 +173,7 @@ export async function updateJob(
   }
 ) {
   const response = await fetch(
-    `http://127.0.0.1:8000/jobs/${jobId}`,
+    `${API_URL}/jobs/${jobId}`,
     {
       method: "PUT",
       headers: {
@@ -191,7 +192,7 @@ export async function updateJob(
 
 export async function deleteJob(jobId: number) {
   const response = await fetch(
-    `http://127.0.0.1:8000/jobs/${jobId}`,
+    `${API_URL}/jobs/${jobId}`,
     {
       method: "DELETE",
     }
@@ -205,7 +206,7 @@ export async function deleteJob(jobId: number) {
 }
 
 export async function getApplications() {
-  const response = await fetch("http://127.0.0.1:8000/applications/");
+  const response = await fetch(`${API_URL}/applications/`);
 
   if (!response.ok) {
     throw new Error("Failed to fetch applications");
@@ -221,7 +222,7 @@ export async function createApplication(application: {
   deadline?: string | null;
   notes?: string | null;
 }) {
-  const response = await fetch("http://127.0.0.1:8000/applications/", {
+  const response = await fetch(`${API_URL}/applications/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -250,7 +251,7 @@ export async function updateApplication(
   }
 ) {
   const response = await fetch(
-    `http://127.0.0.1:8000/applications/${applicationId}`,
+    `${API_URL}/applications/${applicationId}`,
     {
       method: "PUT",
       headers: {
@@ -269,7 +270,7 @@ export async function updateApplication(
 
 export async function deleteApplication(applicationId: number) {
   const response = await fetch(
-    `http://127.0.0.1:8000/applications/${applicationId}`,
+    `${API_URL}/applications/${applicationId}`,
     {
       method: "DELETE",
     }
