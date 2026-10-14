@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import {
-  checkBackend,
   createApplication,
   createExperience,
   createJob,
@@ -21,7 +20,6 @@ import {
 import ResumeImport from "@/components/ResumeImport";
 
 export default function Home() {
-  const [status, setStatus] = useState("Not checked");
   const [experiences, setExperiences] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     type: "",
@@ -127,20 +125,8 @@ export default function Home() {
       try {
         const data = await getApplications();
         setApplications(data);
-
-        showTemporaryMessage(
-          "applicationDelete",
-          setApplicationDeleteMessage,
-          "Application deleted successfully.",
-        );
       } catch (error) {
         console.error(error);
-
-        showTemporaryMessage(
-          "applicationDelete",
-          setApplicationDeleteMessage,
-          "Unable to delete application.",
-        );
       }
     }
 
@@ -148,15 +134,6 @@ export default function Home() {
     loadJobs();
     loadApplications();
   }, []);
-
-  async function handleCheckBackend() {
-    try {
-      const data = await checkBackend();
-      setStatus(data.status);
-    } catch {
-      setStatus("Backend unavailable");
-    }
-  }
 
   async function handleCreateExperience(event: React.FormEvent) {
     event.preventDefault();
@@ -534,8 +511,20 @@ export default function Home() {
           (application) => application.id !== applicationId,
         ),
       );
+
+      showTemporaryMessage(
+        "applicationDelete",
+        setApplicationDeleteMessage,
+        "Application deleted successfully.",
+      );
     } catch (error) {
       console.error(error);
+
+      showTemporaryMessage(
+        "applicationDelete",
+        setApplicationDeleteMessage,
+        "Unable to delete application.",
+      );
     }
   }
 
@@ -888,17 +877,6 @@ export default function Home() {
 
         <section className="mb-10">
           <ResumeImport />
-        </section>
-
-        <section className="mb-10 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div>
-            <p className={labelClass}>Backend status</p>
-            <p className="text-lg font-semibold text-gray-900">{status}</p>
-          </div>
-
-          <button onClick={handleCheckBackend} className={secondaryButtonClass}>
-            Check Backend
-          </button>
         </section>
 
         <section className="mb-10">
