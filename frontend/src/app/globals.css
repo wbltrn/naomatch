@@ -17,3 +17,22 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Browsers don't give <button> a pointer cursor or any "press" feedback
+   by default (unlike <a>). Applied globally so every button in the app
+   feels clickable and confirms a click registered, without having to
+   touch every button's own className. Deliberately not animating this
+   (no transition) so it can't fight with buttons that already use
+   Tailwind's `transition` class for their own hover color animation --
+   an instant press-down is still clear, immediate feedback. */
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
