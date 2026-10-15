@@ -71,6 +71,7 @@ export default function Home() {
   const [deleteMessage, setDeleteMessage] = useState("");
   const [isCurrent, setIsCurrent] = useState(false);
   const [jobs, setJobs] = useState<any[]>([]);
+  const [expandedJobIds, setExpandedJobIds] = useState<Set<number>>(new Set());
   const [editingJobId, setEditingJobId] = useState<number | null>(null);
   const [jobFormMessage, setJobFormMessage] = useState("");
   const [jobDeleteMessage, setJobDeleteMessage] = useState("");
@@ -297,6 +298,20 @@ export default function Home() {
     return formattedDate.toLocaleDateString("en-US", {
       month: "short",
       year: "numeric",
+    });
+  }
+
+  function toggleJobDetails(jobId: number) {
+    setExpandedJobIds((current) => {
+      const updated = new Set(current);
+
+      if (updated.has(jobId)) {
+        updated.delete(jobId);
+      } else {
+        updated.add(jobId);
+      }
+
+      return updated;
     });
   }
 
@@ -1308,11 +1323,23 @@ export default function Home() {
                         View Job Posting
                       </a>
                     )}
+
+                    <button
+                      type="button"
+                      onClick={() => toggleJobDetails(job.id)}
+                      className="text-gray-600 underline hover:no-underline"
+                    >
+                      {expandedJobIds.has(job.id)
+                        ? "Hide details"
+                        : "Show details"}
+                    </button>
                   </div>
 
-                  <p className="mt-2 text-sm text-gray-700">
-                    {job.description}
-                  </p>
+                  {expandedJobIds.has(job.id) && (
+                    <p className="mt-2 text-sm text-gray-700">
+                      {job.description}
+                    </p>
+                  )}
 
                   <div className="mt-3 flex gap-2">
                     <button
