@@ -36,3 +36,15 @@ button:not(:disabled):active {
 button:disabled {
   cursor: not-allowed;
 }
+
+/* <input type="file">'s native "Choose File" control and <select> dropdowns
+   aren't <button> elements, so the rules above never applied to them. The
+   file input's clickable part is the ::file-selector-button pseudo-element. */
+select:not(:disabled),
+input[type="file"]:not(:disabled)::file-selector-button {
+  cursor: pointer;
+}
+
+input[type="file"]:not(:disabled)::file-selector-button:active {
+  transform: scale(0.97);
+}
