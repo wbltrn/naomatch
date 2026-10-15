@@ -70,10 +70,19 @@
 \vspace{ {{ layout.subheading_after }}pt }
 }
 
-\newcommand{\resumeProjectHeading}[2]{
-\item
-\begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
-\small #1 & \small #2 \\
+\newcommand{\resumeProjectHeading}[3]{
+\vspace{ {{ layout.subheading_before }}pt }\item
+\begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+\textbf{\small #1} & \small #3 \\
+\textit{\small #2} & \\
+\end{tabular*}
+\vspace{ {{ layout.project_after }}pt }
+}
+
+\newcommand{\resumeProjectHeadingNoTech}[2]{
+\vspace{ {{ layout.subheading_before }}pt }\item
+\begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+\textbf{\small #1} & \small #2 \\
 \end{tabular*}
 \vspace{ {{ layout.project_after }}pt }
 }
@@ -219,32 +228,42 @@ partopsep=0pt
 
 {% for item in section.get("items", []) %}
 
+{% if item.get("technologies") %}
 \resumeProjectHeading
 {
-    \textbf{
-        {{
-            item.get(
-                "name",
-                item.get("title", "")
-            )
-            | latex
-        }}
-    }
-
-    {% if item.get("technologies") %}
-    $|$
-    \emph{
-        {{
-            item.get("technologies")
-            | map("latex")
-            | join(", ")
-        }}
-    }
-    {% endif %}
+    {{
+        item.get(
+            "name",
+            item.get("title", "")
+        )
+        | latex
+    }}
+}
+{
+    {{
+        item.get("technologies")
+        | map("latex")
+        | join(", ")
+    }}
 }
 {
     {{ item.get("date", "") | latex }}
 }
+{% else %}
+\resumeProjectHeadingNoTech
+{
+    {{
+        item.get(
+            "name",
+            item.get("title", "")
+        )
+        | latex
+    }}
+}
+{
+    {{ item.get("date", "") | latex }}
+}
+{% endif %}
 
 {% if item.get("bullets") %}
 \resumeItemListStart
