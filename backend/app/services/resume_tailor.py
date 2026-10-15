@@ -61,7 +61,7 @@ RESUME_TAILOR_CACHE: dict[
 
 # Increment whenever tailoring behavior or the validated output format
 # changes enough that existing cached results should be regenerated.
-TAILORING_SCHEMA_VERSION = "6"
+TAILORING_SCHEMA_VERSION = "7"
 
 
 class ResumeTailoringUnavailableError(
@@ -268,9 +268,10 @@ For example:
 - Vault category "work" will normally appear under "Experience".
 - A highly relevant research role may appear under "Research" or under
   "Experience" when that produces a stronger truthful resume.
-- Leadership may remain under "Leadership & Activities", or a highly
-  relevant professional-style leadership entry may appear under
-  "Experience".
+- Leadership must always remain under "Leadership & Activities", even
+  when the role reads as professional or technical in nature. "Experience"
+  is reserved strictly for internships and full-time work (Vault category
+  "work") -- never move a leadership entry there, regardless of relevance.
 - Projects will normally appear under "Projects".
 - Education should normally remain Education.
 - Skills should normally remain Technical Skills.
@@ -321,8 +322,8 @@ ALTERNATE ITEMS RULES:
   - reason: why this omitted item is useful for the target job
 - A project alternate should normally use section_type "projects".
 - A work alternate should normally use section_type "experience".
-- A leadership alternate may use "leadership" or "experience" depending
-  on relevance and truthful presentation.
+- A leadership alternate must always use section_type "leadership",
+  never "experience".
 - Do not return an alternate simply because it exists in the Vault.
 - Returning zero alternates is acceptable when no omitted evidence is
   strong enough.
